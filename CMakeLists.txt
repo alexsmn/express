@@ -8,3 +8,5 @@ add_library(express ${express_sources})
 target_include_directories(express PUBLIC ".")
 
 target_compile_definitions(express PRIVATE -DEXPRESS_IMPLEMENTATION)
+
+target_link_libraries(express base)
