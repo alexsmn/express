@@ -56,7 +56,7 @@ static double xor_(double x, double y)
 // binary functions
 
 template<class T>
-struct bin_min : public std::binary_function<T, T, T>
+struct bin_min
 {
 	T operator()(const T& left, const T& right) const
 	{
@@ -65,7 +65,7 @@ struct bin_min : public std::binary_function<T, T, T>
 };
 
 template<class T>
-struct bin_max : public std::binary_function<T, T, T>
+struct bin_max
 {
 	T operator()(const T& left, const T& right) const
 	{
