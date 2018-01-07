@@ -17,7 +17,7 @@ public:
     struct {
       char*	string;
       int		length;
-    };
+    } str;
   };
 #pragma warning(pop)
 
@@ -38,9 +38,9 @@ public:
 
   void _set_string(const char* str, int length)
   {
-    this->length = length;
-    this->string = new char[length + 1];
-    memcpy(this->string, str, length + 1);
+    this->str.length = length;
+    this->str.string = new char[length + 1];
+    memcpy(this->str.string, str, length + 1);
   }
 
   void set_string(const char* str, int length)
@@ -59,7 +59,7 @@ public:
       number = right.number;
       break;
     case STRING:
-      _set_string(right.string, right.length);
+      _set_string(right.str.string, right.str.length);
       break;
     default:
       _bad_type();
@@ -70,7 +70,7 @@ public:
   void _clear()
   {
     if (type == STRING)
-      delete[] string;
+      delete[] str.string;
   }
 
   static void _bad_type()
@@ -90,7 +90,7 @@ public:
   operator float() const { return (float)(double)*this; }
   operator double() const { if (type != NUMBER) _bad_type(); return number; }
   operator bool() const { return (double)*this >= kPrecision; }
-  operator const char*() const { if (type != STRING) _bad_type(); return string; }
+  operator const char*() const { if (type != STRING) _bad_type(); return str.string; }
   operator double&() { if (type != NUMBER) _bad_type(); return number; }
 
   Value& operator =(double value)
@@ -146,7 +146,7 @@ public:
     case NUMBER:
       return fabs(number - right.number) < kPrecision;
     case STRING:
-      return strcmp(string, right.string) == 0;
+      return strcmp(str.string, right.str.string) == 0;
     default:
       _bad_type();
       return false;
@@ -163,7 +163,7 @@ public:
     case NUMBER:
       return number < (double)right;
     case STRING:
-      return strcmp(string, (const char*)right) < 0;
+      return strcmp(str.string, (const char*)right) < 0;
     default:
       _bad_type();
       return false;
@@ -177,7 +177,7 @@ public:
     case NUMBER:
       return number > (double)right;
     case STRING:
-      return strcmp(string, (const char*)right) > 0;
+      return strcmp(str.string, (const char*)right) > 0;
     default:
       _bad_type();
       return false;
@@ -191,7 +191,7 @@ public:
     case NUMBER:
       return number < right.number || fabs(number - right.number) < kPrecision;
     case STRING:
-      return strcmp(string, right.string) <= 0;
+      return strcmp(str.string, right.str.string) <= 0;
     default:
       _bad_type();
       return false;
@@ -205,7 +205,7 @@ public:
     case NUMBER:
       return number > right.number || fabs(number - right.number) < kPrecision;
     case STRING:
-      return strcmp(string, right.string) >= 0;
+      return strcmp(str.string, right.str.string) >= 0;
     default:
       _bad_type();
       return false;
