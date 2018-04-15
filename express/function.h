@@ -3,8 +3,8 @@
 #include "express/express.h"
 #include "express/express_export.h"
 
-#include <string>
 #include <stdexcept>
+#include <string>
 
 namespace expression {
 
@@ -12,15 +12,17 @@ class Expression;
 
 class EXPRESS_EXPORT Function {
  public:
-  Function(const char* name, int params)
-      : name(name),
-        params(params) { }
+  Function(const char* name, int params) : name(name), params(params) {}
 
-  virtual void prepare(Expression& expr) { }
-  virtual void Calculate(const Expression& expr, int pos, Value& val,
+  virtual void prepare(Expression& expr) {}
+  virtual void Calculate(const Expression& expr,
+                         int pos,
+                         Value& val,
                          void* data) = 0;
   std::string Format(const Expression& expr, int pos) const;
-  void Traverse(const Expression& expr, int pos, TraverseCallback callb,
+  void Traverse(const Expression& expr,
+                int pos,
+                TraverseCallback callb,
                 void* param) const;
 
   const char* name;
@@ -36,7 +38,7 @@ inline bool EqualsNoCase(const char* a, const char* b) {
 }
 
 inline Function* find_function_list(Function** list, const char* name) {
-  for ( ; *list; ++list) {
+  for (; *list; ++list) {
     if (EqualsNoCase((*list)->name, name))
       return *list;
   }
@@ -60,19 +62,21 @@ public:
   }
 };*/
 
-template<typename T>
-class multi_fun : public Function
-{
-public:
-  explicit multi_fun(const char* name) : Function(name, -1) { }
+template <typename T>
+class multi_fun : public Function {
+ public:
+  explicit multi_fun(const char* name) : Function(name, -1) {}
 
-  virtual void Calculate(const Expression& expr, int pos, Value& val, void* data) {
+  virtual void Calculate(const Expression& expr,
+                         int pos,
+                         Value& val,
+                         void* data) {
     int nparam = expr.buffer.read<unsigned char>(pos);
     if (nparam < 2)
       throw std::runtime_error("multi_fun::Calculate");
 
     int params[256];
-    expr.buffer.read(pos, params, nparam*sizeof(int));
+    expr.buffer.read(pos, params, nparam * sizeof(int));
 
     expr.CalculateNode(params[0], val, data);
 
@@ -84,15 +88,16 @@ public:
   }
 };
 
-class math1_fun : public Function
-{
-public:
+class math1_fun : public Function {
+ public:
   typedef double (*fun_t)(double);
-  fun_t	fun;
+  fun_t fun;
 
-  math1_fun(const char* name, fun_t fun) : Function(name, 1), fun(fun) { }
+  math1_fun(const char* name, fun_t fun) : Function(name, 1), fun(fun) {}
 
-  virtual void Calculate(const Expression& expr, int pos, Value& val,
+  virtual void Calculate(const Expression& expr,
+                         int pos,
+                         Value& val,
                          void* data) {
     int param_pos = expr.buffer.read<int>(pos);
     Value v;
@@ -101,15 +106,17 @@ public:
   }
 };
 
-class math2_fun : public Function
-{
-public:
+class math2_fun : public Function {
+ public:
   typedef double (*fun_t)(double, double);
-  fun_t	fun;
+  fun_t fun;
 
-  math2_fun(const char* name, fun_t fun) : Function(name, 2), fun(fun) { }
+  math2_fun(const char* name, fun_t fun) : Function(name, 2), fun(fun) {}
 
-  virtual void Calculate(const Expression& expr, int pos, Value& val, void* data) {
+  virtual void Calculate(const Expression& expr,
+                         int pos,
+                         Value& val,
+                         void* data) {
     int p1 = expr.buffer.read<int>(pos);
     int p2 = expr.buffer.read<int>(pos);
 
@@ -121,4 +128,4 @@ public:
   }
 };
 
-} // namespace expression
+}  // namespace expression

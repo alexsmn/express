@@ -15,3 +15,5 @@ if(WIN32)
 endif()
 
 target_link_libraries(express base)
+
+add_subdirectory(tests)

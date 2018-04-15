@@ -3,6 +3,7 @@
 #include "express/buffer.h"
 #include "express/express.h"
 #include "express/express_export.h"
+#include "express/lexem_data.h"
 
 namespace expression {
 
@@ -10,7 +11,10 @@ class Expression;
 
 class EXPRESS_EXPORT Parser {
  public:
-  Parser(Expression& expression, const char* buffer);
+  Parser(Expression& expression, const char* buffer, int flags);
+
+  Parser(const Parser&) = delete;
+  Parser& operator=(const Parser&) = delete;
 
   bool ReadNumber();
   void ReadString();
@@ -24,16 +28,14 @@ class EXPRESS_EXPORT Parser {
 
   int Parse();
 
+  LexemData lexem_data_;
+
   const char*	buf;
-  char		lexem;
-  double		_double;
-  int			_int;
-  const char*	_str;
-  int			_strl;
   void*		_data;
   int			prior;
   int			type;
   Expression*	expr;
+  const int flags_;
 };
 
 void WriteNumber(Buffer& buffer, double val);

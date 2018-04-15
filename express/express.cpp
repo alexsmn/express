@@ -1,5 +1,7 @@
-#include "base/strings/string_number_conversions.h"
 #include "express/express.h"
+
+#include "base/strings/string_number_conversions.h"
+#include "express/express_delegate.h"
 #include "express/function.h"
 #include "express/parser.h"
 
@@ -7,7 +9,7 @@ double Value::kPrecision = 1e-6;
 
 namespace expression {
 
-void Expression::Parse(const char* buf) {
+void Expression::Parse(const char* buf, int flags) {
   assert(buffer.empty());
   assert(!buffer.cap);
   assert(!buffer.size);
@@ -17,7 +19,7 @@ void Expression::Parse(const char* buf) {
   buffer.cap = sizeof(temp_mem);
 
   try {
-    Parser parser(*this, buf);
+    Parser parser{*this, buf, flags};
     root = parser.Parse();
     if (root < 0)
       throw std::runtime_error("expression expected");
@@ -70,7 +72,7 @@ void Expression::CalculateNode(int pos, Value& val, void* data) const {
       while (*p)
         p++;
       size_t len = p - str;
-      pos += len + 1;	// should be safe
+      pos += len + 1;  // should be safe
       val.set_string(str, len);
       return;
     }
@@ -79,11 +81,11 @@ void Expression::CalculateNode(int pos, Value& val, void* data) const {
       fun->Calculate(*this, pos, val, data);
       return;
     }
-    case '-'|LEX_UNA:
-    case '!'|LEX_UNA: {
+    case '-' | LEX_UNA:
+    case '!' | LEX_UNA: {
       int arg_pos = buffer.read<int>(pos);
       CalculateNode(arg_pos, val, data);
-      switch ((unsigned char)(lexem&~LEX_UNA)) {
+      switch ((unsigned char)(lexem & ~LEX_UNA)) {
         case '-':
           val = -val;
           return;
@@ -151,7 +153,7 @@ void Expression::CalculateNode(int pos, Value& val, void* data) const {
       return;
     }
     default:
-      CalculateLexem(pos, lexem, val, data);
+      delegate_.CalculateLexem(buffer, pos, lexem, val, data);
       return;
   }
 }
@@ -174,9 +176,9 @@ std::string Expression::FormatNode(int pos) const {
       str.insert(str.end(), '"');
       return str;
     }
-    case '-'|LEX_UNA:
-    case '!'|LEX_UNA: {
-      char oper = lexem&~LEX_UNA;
+    case '-' | LEX_UNA:
+    case '!' | LEX_UNA: {
+      char oper = lexem & ~LEX_UNA;
       int arg_pos = buffer.read<int>(pos);
       std::string str = FormatNode(arg_pos);
       str.insert(str.begin(), oper);
@@ -219,11 +221,13 @@ std::string Expression::FormatNode(int pos) const {
       return str;
     }
     default:
-      return FormatLexem(pos, lexem);
+      return delegate_.FormatLexem(pos, lexem);
   }
 }
 
-void Expression::TraverseNode(int pos, TraverseCallback callb, void* param) const {
+void Expression::TraverseNode(int pos,
+                              TraverseCallback callb,
+                              void* param) const {
   Lexem lexem = (Lexem)buffer.read<char>(pos);
   switch ((unsigned char)lexem) {
     case LEX_DBL:
@@ -233,8 +237,8 @@ void Expression::TraverseNode(int pos, TraverseCallback callb, void* param) cons
     case LEX_STR:
       callb(*this, lexem, param);
       return;
-    case '-'|LEX_UNA:
-    case '!'|LEX_UNA:
+    case '-' | LEX_UNA:
+    case '!' | LEX_UNA:
     case LEX_LP: {
       int arg_pos = buffer.read<int>(pos);
       callb(*this, lexem, param);
@@ -259,17 +263,16 @@ void Expression::TraverseNode(int pos, TraverseCallback callb, void* param) cons
       return;
     }
     default:
-      TraverseLexem(pos, lexem, callb, param);
+      delegate_.TraverseLexem(*this, pos, lexem, callb, param);
       return;
   }
 }
 
-namespace functions
-{
+namespace functions {
 extern Function* find_default_function(const char* name);
 }
 
-Function* Expression::find_function(const char* name) {
+Function* ExpressionDelegate::FindFunction(const char* name) {
   return functions::find_default_function(name);
 }
 
@@ -298,7 +301,9 @@ std::string Function::Format(const Expression& expr, int pos) const {
   return str;
 }
 
-void Function::Traverse(const Expression& expr, int pos, TraverseCallback callb,
+void Function::Traverse(const Expression& expr,
+                        int pos,
+                        TraverseCallback callb,
                         void* param) const {
   int npar = this->params;
   if (npar == -1)
@@ -312,4 +317,4 @@ void Function::Traverse(const Expression& expr, int pos, TraverseCallback callb,
     expr.TraverseNode(pars[i], callb, param);
 }
 
-} // namespace expression
+}  // namespace expression

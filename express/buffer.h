@@ -4,9 +4,12 @@
 #include <cassert>
 #include <stdexcept>
 
+namespace expression {
+
 class Buffer {
  public:
-  Buffer(char* buf, int cap) : buf(buf), cap(cap), size(0) {}
+  Buffer() {}
+  Buffer(char* buf, int cap) : buf(buf), cap(cap) {}
 
   Buffer(const Buffer&) = delete;
   Buffer& operator=(const Buffer&) = delete;
@@ -37,7 +40,7 @@ class Buffer {
   }
 
   bool empty() const {
-    return !size;
+    return size == 0;
   }
 
   template<typename T> Buffer& operator <<(const T& val) {
@@ -51,7 +54,15 @@ class Buffer {
     return val;
   }
 
-  char*	buf;
-  int		size;
-  int		cap;
+  void swap(Buffer& other) {
+    std::swap(buf, other.buf);
+    std::swap(size, other.size);
+    std::swap(cap, other.cap);
+  }
+
+  char* buf = nullptr;
+  int size = 0;
+  int cap = 0;
 };
+
+} // namespace expression
