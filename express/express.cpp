@@ -5,9 +5,9 @@
 #include "express/function.h"
 #include "express/parser.h"
 
-double Value::kPrecision = 1e-6;
-
 namespace expression {
+
+double Value::kPrecision = 1e-6;
 
 void Expression::Parse(const char* buf, int flags) {
   assert(buffer.empty());
