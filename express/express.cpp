@@ -162,13 +162,13 @@ std::string Expression::FormatNode(int pos) const {
   Lexem lexem = (Lexem)buffer.read<char>(pos);
   switch ((unsigned char)lexem) {
     case LEX_DBL:
-      return base::DoubleToString(buffer.read<double>(pos));
+      return base::NumberToString(buffer.read<double>(pos));
     case LEX_I4:
-      return base::IntToString(buffer.read<int>(pos));
+      return base::NumberToString(buffer.read<int>(pos));
     case LEX_I2:
-      return base::IntToString(buffer.read<short>(pos));
+      return base::NumberToString(buffer.read<short>(pos));
     case LEX_I1:
-      return base::IntToString(buffer.read<char>(pos));
+      return base::NumberToString(buffer.read<char>(pos));
     case LEX_STR: {
       std::string str = buffer.ptr(pos);
       pos += str.length() + 1;
