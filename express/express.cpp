@@ -221,7 +221,7 @@ std::string Expression::FormatNode(int pos) const {
       return str;
     }
     default:
-      return delegate_.FormatLexem(pos, lexem);
+      return delegate_.FormatLexem(buffer, pos, lexem);
   }
 }
 

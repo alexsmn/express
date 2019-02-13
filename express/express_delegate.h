@@ -36,7 +36,9 @@ class EXPRESS_EXPORT ExpressionDelegate {
     throw std::runtime_error("CalculateLexem");
   }
 
-  virtual std::string FormatLexem(int pos, Lexem lexem) const {
+  virtual std::string FormatLexem(const expression::Buffer& buffer,
+                                  int pos,
+                                  Lexem lexem) const {
     throw std::runtime_error("FormatLexem");
   }
 
