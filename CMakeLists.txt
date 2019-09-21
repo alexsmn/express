@@ -9,11 +9,12 @@ target_include_directories(express PUBLIC ".")
 
 target_compile_definitions(express PRIVATE -DEXPRESS_IMPLEMENTATION)
 
-# Conformance mode
+target_compile_features(express PUBLIC cxx_std_17)
+
 if(WIN32)
   target_compile_options(express PRIVATE "/Za" "/permissive-")
 endif()
 
-target_link_libraries(express base)
+enable_testing()
 
 add_subdirectory(tests)

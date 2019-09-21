@@ -1,43 +1,35 @@
 #pragma once
 
-#include "express/buffer.h"
-#include "express/express.h"
+#include "express/allocator.h"
 #include "express/express_export.h"
-#include "express/lexem_data.h"
+#include "express/lexem.h"
 
 namespace expression {
 
-class Expression;
+class ParserDelegate;
+class Token;
+class Lexer;
 
 class EXPRESS_EXPORT Parser {
  public:
-  Parser(Expression& expression, const char* buffer, int flags);
+  Parser(Lexer& lexer, Allocator& allocator, ParserDelegate& delegate);
 
   Parser(const Parser&) = delete;
   Parser& operator=(const Parser&) = delete;
 
-  bool ReadNumber();
-  void ReadString();
+  Token* CreatePrimaryToken();
+  Token* CreateBinaryOperator(int priority = 0);
+  Token* Parse();
+
+  const Lexem& next_lexem() const { return next_lexem_; }
   void ReadLexem();
 
-  // returns primary expression position in buffer
-  int expr_prim();
+ private:
+  Lexer& lexer_;
+  Allocator& allocator_;
+  ParserDelegate& delegate_;
 
-  // returns binary expression position in buffer
-  int expr_bin(char prior = 0);
-
-  int Parse();
-
-  LexemData lexem_data_;
-
-  const char*	buf;
-  void*		_data;
-  int			prior;
-  int			type;
-  Expression*	expr;
-  const int flags_;
+  Lexem next_lexem_;
 };
 
-void WriteNumber(Buffer& buffer, double val);
-
-} // namespace expression
+}  // namespace expression
