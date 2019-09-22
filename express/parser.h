@@ -29,7 +29,7 @@ class EXPRESS_EXPORT Parser {
   Allocator& allocator_;
   ParserDelegate& delegate_;
 
-  Lexem next_lexem_;
+  Lexem next_lexem_{LEX_END};
 };
 
 }  // namespace expression

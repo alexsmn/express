@@ -38,6 +38,8 @@ TEST(Express, Test) {
   Validate(28, "(2 + 5) * 4");
   Validate(6, "(10 - (5 + 3)) * 3");
   Validate("Hello, World!", "\"Hello, \" + \"World!\"");
+  const std::string kLongString(100, '#');
+  Validate(kLongString, ("\"" + kLongString + "\"").c_str());
 }
 
 }  // namespace expression

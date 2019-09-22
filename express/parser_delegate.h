@@ -7,10 +7,10 @@
 namespace expression {
 
 class Allocator;
+class Function;
+class Lexem;
 class Parser;
 class Token;
-class Function;
-struct Lexem;
 
 namespace functions {
 extern Function* FindDefaultFunction(std::string_view name);

@@ -35,13 +35,10 @@ std::optional<Lexem> Lexer::ReadNumber() {
   if (!res)
     return std::nullopt;
 
-  Lexem lexem = {};
-  lexem.lexem = LEX_DBL;
   if (exp)
-    lexem._double = num / exp;
+    return Lexem::Double(num / exp);
   else
-    lexem._double = num;
-  return lexem;
+    return Lexem::Double(num);
 }
 
 Lexem Lexer::ReadString() {
@@ -55,17 +52,15 @@ Lexem Lexer::ReadString() {
     buf_++;
   }
 
-  Lexem lexem = {};
-  lexem.lexem = LEX_STR;
-  lexem._string = std::string_view{start, static_cast<size_t>(buf_ - start)};
+  std::string_view str{start, static_cast<size_t>(buf_ - start)};
   buf_++;
 
-  return lexem;
+  return Lexem::String(LEX_STR, str);
 }
 
 Lexem Lexer::ReadLexem() {
 repeat:
-  Lexem lexem = {LEX_END};
+  Lexem lexem = Lexem{LEX_END};
   switch (*buf_) {
     case ' ':
     case '\t':
@@ -76,8 +71,7 @@ repeat:
     case '(':
     case ')':
     case ',':
-      lexem.lexem = *buf_++;
-      return lexem;
+      return Lexem(*buf_++);
     case '!':
       lexem.lexem = *buf_++, lexem.type = OPER_UNA;
       return lexem;
@@ -95,19 +89,14 @@ repeat:
         lexem.lexem = LEX_LE, buf_++;
       return lexem;
     case '-':
-      lexem.lexem = *buf_++, lexem.type = OPER_BIN | OPER_UNA,
-      lexem.priority = 1;
-      return lexem;
+      return Lexem(*buf_++, OPER_BIN | OPER_UNA, 1);
     case '+':
-      lexem.lexem = *buf_++, lexem.type = OPER_BIN, lexem.priority = 1;
-      return lexem;
+      return Lexem(*buf_++, OPER_BIN, 1);
     case '*':
     case '/':
-      lexem.lexem = *buf_++, lexem.type = OPER_BIN, lexem.priority = 2;
-      return lexem;
+      return Lexem(*buf_++, OPER_BIN, 2);
     case '^':
-      lexem.lexem = *buf_++, lexem.type = OPER_BIN, lexem.priority = 3;
-      return lexem;
+      return Lexem(*buf_++, OPER_BIN, 3);
     case '"':
       return ReadString();
 
@@ -131,17 +120,14 @@ std::optional<Lexem> Lexer::ReadStandardName() {
     return std::nullopt;
 
   // read name
-  const char* str = buf_;
+  const char* start = buf_;
   do {
     buf++;
   } while (std::isalnum(*buf));
-  int strl = static_cast<int>(buf - str);
   buf_ = buf;
 
-  Lexem lexem = {};
-  lexem.lexem = expression::LEX_NAME;
-  lexem._string = std::string_view{str, static_cast<size_t>(strl)};
-  return lexem;
+  std::string_view str(start, static_cast<size_t>(buf - start));
+  return Lexem::String(LEX_NAME, str);
 }
 
 }  // namespace expression

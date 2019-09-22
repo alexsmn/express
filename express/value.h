@@ -64,6 +64,12 @@ class Value {
   Value(const char* str, int length) : type(STRING) {
     _set_string(str, length);
   }
+  Value(std::string_view str) : type(STRING) {
+    _set_string(str.data(), str.size());
+  }
+  Value(const std::string& str) : type(STRING) {
+    _set_string(str.data(), str.size());
+  }
   Value(const Value& right) { _set(right); }
 
   ~Value() { _clear(); }
@@ -74,7 +80,8 @@ class Value {
   void _set_string(const char* str, int length) {
     this->str.length = length;
     this->str.string = new char[length + 1];
-    memcpy(this->str.string, str, length + 1);
+    memcpy(this->str.string, str, length);
+    this->str.string[length] = '\0';
   }
 
   void set_string(const char* str, int length) {
