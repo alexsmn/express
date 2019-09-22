@@ -162,8 +162,16 @@ class Value {
     return static_cast<double>(*this) / right;
   }
 
-  Value& operator+=(double right) {
-    static_cast<double&>(*this) += right;
+  Value& operator+=(const Value& right) {
+    if (type != right.type)
+      _bad_type();
+    if (type == NUMBER) {
+      static_cast<double&>(*this) += static_cast<double>(right);
+    } else {
+      auto s = std::string(str.string, str.length) +
+               std::string(right.str.string, right.str.length);
+      set_string(s.data(), s.size());
+    }
     return *this;
   }
   Value& operator-=(double right) {
@@ -216,17 +224,11 @@ class Value {
     }
   }
 
-  bool operator>(const Value& right) const {
-    return right < *this;
-  }
+  bool operator>(const Value& right) const { return right < *this; }
 
-  bool operator<=(const Value& right) const {
-    return !(right < *this);
-  }
+  bool operator<=(const Value& right) const { return !(right < *this); }
 
-  bool operator>=(const Value& right) const {
-    return !(*this < right);
-  }
+  bool operator>=(const Value& right) const { return !(*this < right); }
 
   Value operator-() const { return -(double)*this; }
   bool operator!() const { return !(bool)*this; }

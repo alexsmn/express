@@ -18,14 +18,14 @@ class TestFormatterDelegate : public FormatterDelegate {
 
 }  // namespace
 
-void Validate(double expected_result, const char* formula) {
+void Validate(Value expected_result, const char* formula) {
   Expression ex;
   LexerDelegate lexer_delegate;
   ParserDelegate parser_delegate;
   ex.Parse(formula, lexer_delegate, parser_delegate);
   TestFormatterDelegate formatter_delegate;
   EXPECT_EQ(formula, ex.Format(formatter_delegate));
-  EXPECT_DOUBLE_EQ(expected_result, ex.Calculate());
+  EXPECT_EQ(expected_result, ex.Calculate());
 }
 
 TEST(Express, Test) {
@@ -37,6 +37,7 @@ TEST(Express, Test) {
   Validate(9, "If(2 - 1 - 1, 4 + 2, 3 * 3)");
   Validate(28, "(2 + 5) * 4");
   Validate(6, "(10 - (5 + 3)) * 3");
+  Validate("Hello, World!", "\"Hello, \" + \"World!\"");
 }
 
 }  // namespace expression

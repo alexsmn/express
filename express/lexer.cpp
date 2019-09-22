@@ -44,8 +44,9 @@ std::optional<Lexem> Lexer::ReadNumber() {
   return lexem;
 }
 
-std::optional<Lexem> Lexer::ReadString() {
+Lexem Lexer::ReadString() {
   assert(*buf_ == '"');
+
   buf_++;
   auto* start = buf_;
   while (*buf_ != '"') {
@@ -74,6 +75,7 @@ repeat:
     case '\0':
     case '(':
     case ')':
+    case ',':
       lexem.lexem = *buf_++;
       return lexem;
     case '!':
@@ -107,12 +109,7 @@ repeat:
       lexem.lexem = *buf_++, lexem.type = OPER_BIN, lexem.priority = 3;
       return lexem;
     case '"':
-      lexem.lexem = LEX_STR;
-      ReadString();
-      return lexem;
-    case ',':
-      lexem.lexem = *buf_++;
-      return lexem;
+      return ReadString();
 
     default:
       if (!(flags_ & EXPR_CUSTOM_NUM)) {

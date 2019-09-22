@@ -18,7 +18,7 @@ class EXPRESS_EXPORT Lexer {
 
   std::optional<Lexem> ReadNumber();
   std::optional<Lexem> ReadStandardName();
-  std::optional<Lexem> ReadString();
+  Lexem ReadString();
 
   Lexem ReadLexem();
 
