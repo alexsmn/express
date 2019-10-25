@@ -3,7 +3,7 @@
 #include "express/lexer_delegate.h"
 #include "express/parser_delegate.h"
 
-#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 namespace expression {
 
