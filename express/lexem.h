@@ -23,8 +23,6 @@ static const LexemType LEX_CUSTOM = 1;
 static const LexemType LEX_TOKEN = 2;
 static const LexemType LEX_UNA = 0x80;
 
-#define EXPR_DEF (-1)  // default position
-
 #define EXPR_CUSTOM_NUM 1
 
 #define OPER_BIN 1

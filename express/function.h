@@ -12,7 +12,7 @@ class EXPRESS_EXPORT Function {
  public:
   Function(std::string_view name, int params) : name(name), params(params) {}
 
-  virtual Token* CreateToken(Allocator& buffer,
+  virtual Token* CreateToken(Allocator& allocator,
                              Token** arguments,
                              int count) const = 0;
 

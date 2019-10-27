@@ -64,11 +64,11 @@ class ConditionalFunction : public Function {
  public:
   ConditionalFunction() : Function("If", 3) {}
 
-  virtual Token* CreateToken(Allocator& buffer,
+  virtual Token* CreateToken(Allocator& allocator,
                              Token** arguments,
                              int count) const override {
     assert(count == 3);
-    return expression::CreateToken<TokenImpl>(buffer, arguments[0],
+    return expression::CreateToken<TokenImpl>(allocator, arguments[0],
                                               arguments[1], arguments[2]);
   }
 

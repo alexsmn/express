@@ -20,7 +20,7 @@ class EXPRESS_EXPORT ParserDelegate {
  public:
   virtual ~ParserDelegate() {}
 
-  virtual Token* CreateToken(Allocator& buffer,
+  virtual Token* CreateToken(Allocator& allocator,
                              const Lexem& lexem,
                              Parser& parser) {
     return nullptr;
