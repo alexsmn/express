@@ -40,9 +40,9 @@ class String {
 
 class Value {
  public:
-  enum { NUMBER, STRING };
+  enum class Type { Number, String };
 
-  int type;
+  Type type;
 
 #pragma warning(push, 3)
   union {
@@ -56,26 +56,28 @@ class Value {
 
   static double kPrecision;
 
-  Value() : type(NUMBER), number(0.0) {}
-  Value(double value) : type(NUMBER), number(value) {}
-  Value(float value) : type(NUMBER), number(value) {}
-  Value(int value) : type(NUMBER), number(value) {}
-  Value(const char* str) : type(STRING) { _set_string(str, (int)strlen(str)); }
-  Value(const char* str, int length) : type(STRING) {
+  Value() : type(Type::Number), number(0.0) {}
+  Value(double value) : type(Type::Number), number(value) {}
+  Value(float value) : type(Type::Number), number(value) {}
+  Value(int value) : type(Type::Number), number(value) {}
+  Value(const char* str) : type(Type::String) {
+    _set_string(str, (int)strlen(str));
+  }
+  Value(const char* str, int length) : type(Type::String) {
     _set_string(str, length);
   }
-  Value(std::string_view str) : type(STRING) {
+  Value(std::string_view str) : type(Type::String) {
     _set_string(str.data(), str.size());
   }
-  Value(const std::string& str) : type(STRING) {
+  Value(const std::string& str) : type(Type::String) {
     _set_string(str.data(), str.size());
   }
   Value(const Value& right) { _set(right); }
 
   ~Value() { _clear(); }
 
-  bool is_number() const { return type == NUMBER; }
-  bool is_string() const { return type == STRING; }
+  bool is_number() const { return type == Type::Number; }
+  bool is_string() const { return type == Type::String; }
 
   void _set_string(const char* str, int length) {
     this->str.length = length;
@@ -87,16 +89,16 @@ class Value {
   void set_string(const char* str, int length) {
     _clear();
     _set_string(str, (int)strlen(str));
-    type = STRING;
+    type = Type::String;
   }
 
   void _set(const Value& right) {
     type = right.type;
     switch (type) {
-      case NUMBER:
+      case Type::Number:
         number = right.number;
         break;
-      case STRING:
+      case Type::String:
         _set_string(right.str.string, right.str.length);
         break;
       default:
@@ -106,7 +108,7 @@ class Value {
   }
 
   void _clear() {
-    if (type == STRING)
+    if (type == Type::String)
       delete[] str.string;
   }
 
@@ -122,25 +124,25 @@ class Value {
   operator int() const { return (int)(double)number; }
   operator float() const { return (float)(double)*this; }
   operator double() const {
-    if (type != NUMBER)
+    if (type != Type::Number)
       _bad_type();
     return number;
   }
   operator bool() const { return (double)*this >= kPrecision; }
   operator const char*() const {
-    if (type != STRING)
+    if (type != Type::String)
       _bad_type();
     return str.string;
   }
   operator double&() {
-    if (type != NUMBER)
+    if (type != Type::Number)
       _bad_type();
     return number;
   }
 
   Value& operator=(double value) {
     _clear();
-    type = NUMBER;
+    type = Type::Number;
     number = value;
     return *this;
   }
@@ -172,7 +174,7 @@ class Value {
   Value& operator+=(const Value& right) {
     if (type != right.type)
       _bad_type();
-    if (type == NUMBER) {
+    if (type == Type::Number) {
       static_cast<double&>(*this) += static_cast<double>(right);
     } else {
       auto s = std::string(str.string, str.length) +
@@ -195,7 +197,7 @@ class Value {
   }
 
   bool operator==(double value) const {
-    return type == NUMBER && fabs(number - value) < kPrecision;
+    return type == Type::Number && fabs(number - value) < kPrecision;
   }
   bool operator==(int value) const { return *this == (double)value; }
 
@@ -203,9 +205,9 @@ class Value {
     if (type != right.type)
       return false;
     switch (type) {
-      case NUMBER:
+      case Type::Number:
         return fabs(number - right.number) < kPrecision;
-      case STRING:
+      case Type::String:
         return strcmp(str.string, right.str.string) == 0;
       default:
         _bad_type();
@@ -221,9 +223,9 @@ class Value {
 
   bool operator<(const Value& right) const {
     switch (type) {
-      case NUMBER:
+      case Type::Number:
         return number < (double)right;
-      case STRING:
+      case Type::String:
         return strcmp(str.string, (const char*)right) < 0;
       default:
         _bad_type();

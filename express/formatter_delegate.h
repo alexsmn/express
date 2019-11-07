@@ -27,10 +27,10 @@ inline void AppendValue(std::string& str,
                         const Value& value,
                         const FormatterDelegate& delegate) {
   switch (value.type) {
-    case Value::STRING:
+    case Value::Type::String:
       delegate.AppendString(str, static_cast<std::string_view>(value));
       break;
-    case Value::NUMBER:
+    case Value::Type::Number:
       delegate.AppendDouble(str, static_cast<double>(value));
       break;
     default:
