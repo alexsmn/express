@@ -6,38 +6,6 @@
 
 namespace expression {
 
-class String {
- public:
-  String() {}
-  String(const char* data) { Set(data, strlen(data)); }
-  String(const char* data, std::size_t size) { Set(data, size); }
-  ~String() { delete[] data_; }
-
-  String(const String& source) { Set(source.data_, source.size_); }
-
-  String& operator=(const String& source) {
-    if (&source != this)
-      Set(source.data_, source.size_);
-    return *this;
-  }
-
- private:
-  void Set(const char* data, std::size_t size) {
-    delete[] data_;
-
-    if (size != 0) {
-      data_ = new char[size + 1];
-      memcpy(data_, data, size);
-      data_[size] = '\0';
-    }
-
-    size_ = size;
-  }
-
-  char* data_ = nullptr;
-  std::size_t size_ = 0;
-};
-
 class Value {
  public:
   enum class Type { Number, String };
