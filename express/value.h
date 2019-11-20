@@ -10,64 +10,54 @@ class Value {
  public:
   enum class Type { Number, String };
 
-  Type type;
+  constexpr Type type() const noexcept { return type_; }
 
-#pragma warning(push, 3)
-  union {
-    double number;
-    struct {
-      char* string;
-      int length;
-    } str;
-  };
-#pragma warning(pop)
+  static constexpr double kPrecision = std::numeric_limits<double>::epsilon();
 
-  static double kPrecision;
-
-  Value() : type(Type::Number), number(0.0) {}
-  Value(double value) : type(Type::Number), number(value) {}
-  Value(float value) : type(Type::Number), number(value) {}
-  Value(int value) : type(Type::Number), number(value) {}
-  Value(const char* str) : type(Type::String) {
-    _set_string(str, (int)strlen(str));
+  Value() : type_(Type::Number), number_(0.0) {}
+  Value(double value) : type_(Type::Number), number_(value) {}
+  Value(float value) : type_(Type::Number), number_(value) {}
+  Value(int value) : type_(Type::Number), number_(value) {}
+  Value(const char* string) : type_(Type::String) {
+    _set_string(string, (int)strlen(string));
   }
-  Value(const char* str, int length) : type(Type::String) {
-    _set_string(str, length);
+  Value(const char* string, int length) : type_(Type::String) {
+    _set_string(string, length);
   }
-  Value(std::string_view str) : type(Type::String) {
-    _set_string(str.data(), str.size());
+  Value(std::string_view string) : type_(Type::String) {
+    _set_string(string.data(), string.size());
   }
-  Value(const std::string& str) : type(Type::String) {
-    _set_string(str.data(), str.size());
+  Value(const std::string& string) : type_(Type::String) {
+    _set_string(string.data(), string.size());
   }
   Value(const Value& right) { _set(right); }
 
   ~Value() { _clear(); }
 
-  bool is_number() const { return type == Type::Number; }
-  bool is_string() const { return type == Type::String; }
+  bool is_number() const { return type_ == Type::Number; }
+  bool is_string() const { return type_ == Type::String; }
 
-  void _set_string(const char* str, int length) {
-    this->str.length = length;
-    this->str.string = new char[length + 1];
-    memcpy(this->str.string, str, length);
-    this->str.string[length] = '\0';
+  void _set_string(const char* string, int length) {
+    string_.length = length;
+    string_.string = new char[length + 1];
+    memcpy(string_.string, string, length);
+    string_.string[length] = '\0';
   }
 
-  void set_string(const char* str, int length) {
+  void set_string(const char* string, int length) {
     _clear();
-    _set_string(str, (int)strlen(str));
-    type = Type::String;
+    _set_string(string, (int)strlen(string));
+    type_ = Type::String;
   }
 
   void _set(const Value& right) {
-    type = right.type;
-    switch (type) {
+    type_ = right.type_;
+    switch (type_) {
       case Type::Number:
-        number = right.number;
+        number_ = right.number_;
         break;
       case Type::String:
-        _set_string(right.str.string, right.str.length);
+        _set_string(right.string_.string, right.string_.length);
         break;
       default:
         _bad_type();
@@ -76,11 +66,11 @@ class Value {
   }
 
   void _clear() {
-    if (type == Type::String)
-      delete[] str.string;
+    if (type_ == Type::String)
+      delete[] string_.string;
   }
 
-  static void _bad_type() { throw std::runtime_error("bad type"); }
+  static void _bad_type() { throw std::runtime_error("bad type_"); }
 
   void swap(Value& value) {
     char buf[sizeof(Value)];
@@ -89,29 +79,29 @@ class Value {
     memcpy(&value, buf, sizeof(Value));
   }
 
-  operator int() const { return (int)(double)number; }
+  operator int() const { return (int)(double)number_; }
   operator float() const { return (float)(double)*this; }
   operator double() const {
-    if (type != Type::Number)
+    if (type_ != Type::Number)
       _bad_type();
-    return number;
+    return number_;
   }
   operator bool() const { return (double)*this >= kPrecision; }
   operator const char*() const {
-    if (type != Type::String)
+    if (type_ != Type::String)
       _bad_type();
-    return str.string;
+    return string_.string;
   }
   operator double&() {
-    if (type != Type::Number)
+    if (type_ != Type::Number)
       _bad_type();
-    return number;
+    return number_;
   }
 
   Value& operator=(double value) {
     _clear();
-    type = Type::Number;
-    number = value;
+    type_ = Type::Number;
+    number_ = value;
     return *this;
   }
 
@@ -121,8 +111,8 @@ class Value {
     return *this;
   }
 
-  Value& operator=(const char* str) {
-    set_string(str, (int)strlen(str));
+  Value& operator=(const char* string) {
+    set_string(string, (int)strlen(string));
     return *this;
   }
 
@@ -140,13 +130,13 @@ class Value {
   }
 
   Value& operator+=(const Value& right) {
-    if (type != right.type)
+    if (type_ != right.type_)
       _bad_type();
-    if (type == Type::Number) {
+    if (type_ == Type::Number) {
       static_cast<double&>(*this) += static_cast<double>(right);
     } else {
-      auto s = std::string(str.string, str.length) +
-               std::string(right.str.string, right.str.length);
+      auto s = std::string(string_.string, string_.length) +
+               std::string(right.string_.string, right.string_.length);
       set_string(s.data(), s.size());
     }
     return *this;
@@ -165,18 +155,18 @@ class Value {
   }
 
   bool operator==(double value) const {
-    return type == Type::Number && fabs(number - value) < kPrecision;
+    return type_ == Type::Number && fabs(number_ - value) < kPrecision;
   }
   bool operator==(int value) const { return *this == (double)value; }
 
   bool operator==(const Value& right) const {
-    if (type != right.type)
+    if (type_ != right.type_)
       return false;
-    switch (type) {
+    switch (type_) {
       case Type::Number:
-        return fabs(number - right.number) < kPrecision;
+        return fabs(number_ - right.number_) < kPrecision;
       case Type::String:
-        return strcmp(str.string, right.str.string) == 0;
+        return strcmp(string_.string, right.string_.string) == 0;
       default:
         _bad_type();
         return false;
@@ -190,11 +180,11 @@ class Value {
   }
 
   bool operator<(const Value& right) const {
-    switch (type) {
+    switch (type_) {
       case Type::Number:
-        return number < (double)right;
+        return number_ < (double)right;
       case Type::String:
-        return strcmp(str.string, (const char*)right) < 0;
+        return strcmp(string_.string, (const char*)right) < 0;
       default:
         _bad_type();
         return false;
@@ -209,6 +199,19 @@ class Value {
 
   Value operator-() const { return -(double)*this; }
   bool operator!() const { return !(bool)*this; }
+
+ private:
+  Type type_;
+
+#pragma warning(push, 3)
+  union {
+    double number_;
+    struct {
+      char* string;
+      int length;
+    } string_;
+  };
+#pragma warning(pop)
 };
 
 }  // namespace expression

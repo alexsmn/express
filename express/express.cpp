@@ -6,8 +6,6 @@
 
 namespace expression {
 
-double Value::kPrecision = 1e-6;
-
 void Expression::Parse(const char* buf,
                        LexerDelegate& lexer_delegate,
                        ParserDelegate& parser_delegate,
