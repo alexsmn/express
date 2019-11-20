@@ -26,7 +26,7 @@ class EXPRESS_EXPORT FormatterDelegate {
 inline void AppendValue(std::string& str,
                         const Value& value,
                         const FormatterDelegate& delegate) {
-  switch (value.type) {
+  switch (value.type()) {
     case Value::Type::String:
       delegate.AppendString(str, static_cast<std::string_view>(value));
       break;
