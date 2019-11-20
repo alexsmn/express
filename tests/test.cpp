@@ -92,6 +92,9 @@ TEST(Express, Test) {
   const std::string kLongString(100, '#');
   Validate(kLongString, ("\"" + kLongString + "\"").c_str());
   Validate(17, "a + b * c", {{"a", 5}, {"b", 4}, {"c", 3}});
+  Validate(1, "Or(a, b)", {{"a", 1}, {"b", 0}});
+  Validate(0, "And(a, b)", {{"a", 1}, {"b", 0}});
+  Validate(1, "Or(c, And(a, b))", {{"a", 1}, {"b", 1}, {"c", 0}});
 }
 
 }  // namespace expression

@@ -186,10 +186,6 @@ Token* Parser::CreatePrimaryToken() {
     return CreateToken<OperUna>(allocator_, lexem.lexem, CreatePrimaryToken());
   }
 
-  Token* pos = delegate_.CreateToken(allocator_, lexem, *this);
-  if (pos)
-    return pos;
-
   switch (lexem.lexem) {
     case LEX_NAME:
       if (next_lexem_.lexem == expression::LEX_LP) {
@@ -234,6 +230,10 @@ Token* Parser::CreatePrimaryToken() {
       return CreateToken<LexLP>(allocator_, pos2);
     }
   }
+
+  Token* pos = delegate_.CreateToken(allocator_, lexem, *this);
+  if (pos)
+    return pos;
 
   throw std::runtime_error("unexpected primary token");
 }
