@@ -1,7 +1,9 @@
-find_package(GTest REQUIRED)
+if(NOT ${GTEST_FOUND})
+	find_package(GTest REQUIRED)
+endif()
 
 add_executable(express_unittest "test.cpp")
-target_link_libraries(express_unittest PUBLIC express GTest::Main)
+target_link_libraries(express_unittest PUBLIC express gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(express_unittest)
