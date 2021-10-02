@@ -19,6 +19,10 @@ class EXPRESS_EXPORT Expression : public BasicExpression<PolymorphicToken> {
              int flags = 0);
 
   using BasicExpression::Parse;
+
+  void Traverse(TraverseCallback callback, void* param) const;
+
+  using BasicExpression::Traverse;
 };
 
 }  // namespace expression

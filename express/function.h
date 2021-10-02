@@ -1,12 +1,13 @@
 #pragma once
 
-#include "express/express.h"
 #include "express/express_export.h"
 
-#include <stdexcept>
-#include <string>
+#include <string_view>
 
 namespace expression {
+
+class Allocator;
+class Token;
 
 class EXPRESS_EXPORT Function {
  public:
@@ -17,13 +18,7 @@ class EXPRESS_EXPORT Function {
                              int count) const = 0;
 
   const std::string_view name;
-  const int params;
+  const int params = -1;
 };
-
-inline bool EqualsNoCase(std::string_view a, std::string_view b) {
-  return std::equal(a.begin(), a.end(), b.begin(), b.end(), [](char a, char b) {
-    return std::tolower(a) == std::tolower(b);
-  });
-}
 
 }  // namespace expression

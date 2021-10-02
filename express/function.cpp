@@ -1,6 +1,7 @@
 #include "express/function.h"
 
 #include "express/express.h"
+#include "express/strings.h"
 
 #include <algorithm>
 #include <functional>
@@ -273,7 +274,8 @@ class MathFunction2 : public Function {
   const fun_t fun_;
 };
 
-inline Function* FindFunction(Function** list, std::string_view name) {
+inline const Function* FindFunction(const Function** list,
+                                    std::string_view name) {
   for (; *list; ++list) {
     if (EqualsNoCase((*list)->name, name))
       return *list;
@@ -281,7 +283,7 @@ inline Function* FindFunction(Function** list, std::string_view name) {
   return NULL;
 }
 
-Function* FindDefaultFunction(std::string_view name) {
+const Function* FindDefaultFunction(std::string_view name) {
   static VariadicFunction<std::logical_or<Value>> logical_or_fun("Or");
   static VariadicFunction<std::logical_and<Value>> logical_and_fun("And");
   static VariadicFunction<Min<Value>> min_fun("Min");
@@ -300,24 +302,24 @@ Function* FindDefaultFunction(std::string_view name) {
   static MathFunction2 bitxor_fun("BitXor", xor_);
   static ConditionalFunction _if;
 
-  static Function* list[] = {&logical_or_fun,
-                             &logical_and_fun,
-                             &min_fun,
-                             &max_fun,
-                             &abs_fun,
-                             &not_fun,
-                             &sign_fun,
-                             &sqrt_fun,
-                             &sin_fun,
-                             &cos_fun,
-                             &tan_fun,
-                             &asin_fun,
-                             &acos_fun,
-                             &atan_fun,
-                             &atan2_fun,
-                             &bitxor_fun,
-                             &_if,
-                             NULL};
+  static const Function* list[] = {&logical_or_fun,
+                                   &logical_and_fun,
+                                   &min_fun,
+                                   &max_fun,
+                                   &abs_fun,
+                                   &not_fun,
+                                   &sign_fun,
+                                   &sqrt_fun,
+                                   &sin_fun,
+                                   &cos_fun,
+                                   &tan_fun,
+                                   &asin_fun,
+                                   &acos_fun,
+                                   &atan_fun,
+                                   &atan2_fun,
+                                   &bitxor_fun,
+                                   &_if,
+                                   NULL};
 
   return FindFunction(list, name);
 }

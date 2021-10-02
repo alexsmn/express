@@ -10,10 +10,7 @@ namespace expression {
 class Allocator;
 class Token;
 
-template <class BasicToken>
-using BasicTraverseCallback = bool (*)(const BasicToken* token, void* param);
-
-using TraverseCallback = BasicTraverseCallback<Token>;
+using TraverseCallback = bool (*)(const Token* token, void* param);
 
 class EXPRESS_EXPORT Token {
  public:
@@ -28,6 +25,11 @@ class EXPRESS_EXPORT Token {
 class PolymorphicToken {
  public:
   explicit PolymorphicToken(const Token& token) : token_{&token} {}
+
+  PolymorphicToken(PolymorphicToken&&) = default;
+  PolymorphicToken& operator=(PolymorphicToken&&) = default;
+
+  const Token* token() const { return token_; }
 
   Value Calculate(void* data) const {
     assert(token_);

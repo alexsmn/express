@@ -23,4 +23,9 @@ void Expression::Parse(const char* buf,
   BasicExpression::Parse(parser, allocator);
 }
 
+void Expression::Traverse(TraverseCallback callback, void* param) const {
+  BasicExpression::Traverse(
+      [callback, param](const Token* token) { return callback(token, param); });
+}
+
 }  // namespace expression

@@ -8,15 +8,12 @@
 namespace expression {
 
 class FormatterDelegate;
-
-template <class BasicToken>
-using BasicTraverseCallback = bool (*)(const BasicToken* token, void* param);
+class Token;
 
 template <class BasicToken>
 class BasicExpression {
  public:
-  using BasicValue =
-      decltype(std::declval<typename BasicToken>().Calculate(nullptr));
+  using BasicValue = decltype(std::declval<BasicToken>().Calculate(nullptr));
 
   BasicExpression() {}
   ~BasicExpression() { Clear(); }
@@ -34,7 +31,8 @@ class BasicExpression {
 
   BasicValue Calculate(void* data = NULL) const;
 
-  void Traverse(BasicTraverseCallback<BasicToken> callback, void* param) const;
+  template <class Visitor>
+  void Traverse(const Visitor& visitor) const;
 
   std::string Format(const FormatterDelegate& delegate) const;
 
@@ -44,6 +42,21 @@ class BasicExpression {
   Allocator allocator_;
   std::optional<BasicToken> root_token_;
 };
+
+namespace {
+
+template <class Visitor>
+struct TraverseAdapter {
+  bool Callback(const Token* token) { return visitor_(token); }
+
+  static bool StaticCallback(const Token* token, void* param) {
+    return static_cast<TraverseAdapter*>(param)->Callback(token);
+  }
+
+  const Visitor& visitor_;
+};
+
+}  // namespace
 
 template <class BasicToken>
 template <class Parser>
@@ -65,11 +78,12 @@ BasicExpression<BasicToken>::Calculate(void* data) const {
 }
 
 template <class BasicToken>
+template <class Visitor>
 inline void BasicExpression<BasicToken>::Traverse(
-    BasicTraverseCallback<BasicToken> callback,
-    void* param) const {
+    const Visitor& visitor) const {
   assert(root_token_.has_value());
-  root_token_->Traverse(callback, param);
+  TraverseAdapter<Visitor> adapter{visitor};
+  root_token_->Traverse(&TraverseAdapter<Visitor>::StaticCallback, &adapter);
 }
 
 template <class BasicToken>

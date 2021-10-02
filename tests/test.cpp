@@ -97,4 +97,22 @@ TEST(Express, Test) {
   Validate(true, "Or(c, And(a, b))", {{"a", true}, {"b", true}, {"c", false}});
 }
 
+bool TokenCountCallback(const Token* token, void* param) {
+  auto& token_count = *static_cast<int*>(param);
+  ++token_count;
+  return true;
+}
+
+int GetTokenCount(const char* formula) {
+  Expression e;
+  e.Parse(formula);
+  int token_count = 0;
+  e.Traverse(&TokenCountCallback, &token_count);
+  return token_count;
+}
+
+TEST(Express, Traverse) {
+  EXPECT_EQ(3, GetTokenCount("1 + 2 + 3 + 4 + 5"));
+}
+
 }  // namespace expression

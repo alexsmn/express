@@ -13,7 +13,7 @@ class Parser;
 class Token;
 
 namespace functions {
-extern Function* FindDefaultFunction(std::string_view name);
+extern const Function* FindDefaultFunction(std::string_view name);
 }
 
 class EXPRESS_EXPORT ParserDelegate {
@@ -26,7 +26,7 @@ class EXPRESS_EXPORT ParserDelegate {
     return nullptr;
   }
 
-  virtual Function* FindFunction(std::string_view name) {
+  virtual const Function* FindFunction(std::string_view name) {
     return functions::FindDefaultFunction(name);
   }
 };
