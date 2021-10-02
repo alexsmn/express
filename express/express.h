@@ -8,9 +8,8 @@ namespace expression {
 
 class LexerDelegate;
 class ParserDelegate;
-class Token;
 
-class EXPRESS_EXPORT Expression : public BasicExpression<Token> {
+class EXPRESS_EXPORT Expression : public BasicExpression<PolymorphicToken> {
  public:
   void Parse(const char* buf,
              LexerDelegate& lexer_delegate,
@@ -18,10 +17,6 @@ class EXPRESS_EXPORT Expression : public BasicExpression<Token> {
              int flags = 0);
 
   using BasicExpression::Parse;
-
- public:
-  using BasicExpression::allocator_;
-  using BasicExpression::root_;
 };
 
 }  // namespace expression

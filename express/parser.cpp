@@ -85,14 +85,15 @@ Token* Parser::CreateBinaryOperator(int priority) {
   return left;
 }
 
-Token* Parser::Parse() {
+std::optional<PolymorphicToken> Parser::Parse() {
   ReadLexem();
 
-  Token* root = CreateBinaryOperator();
+  const Token* root_token = CreateBinaryOperator();
   if (next_lexem_.lexem != LEX_END)
-    return nullptr;
+    return std::nullopt;
 
-  return root;
+  assert(root_token);
+  return PolymorphicToken{*root_token};
 }
 
 void Parser::ReadLexem() {

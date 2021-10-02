@@ -19,10 +19,33 @@ class EXPRESS_EXPORT Token {
  public:
   virtual Value Calculate(void* data) const = 0;
 
-  virtual void Traverse(TraverseCallback callb, void* param) const = 0;
+  virtual void Traverse(TraverseCallback callback, void* param) const = 0;
 
   virtual void Format(const FormatterDelegate& delegate,
                       std::string& str) const = 0;
+};
+
+class PolymorphicToken {
+ public:
+  explicit PolymorphicToken(const Token& token) : token_{&token} {}
+
+  Value Calculate(void* data) const {
+    assert(token_);
+    return token_->Calculate(data);
+  }
+
+  void Traverse(TraverseCallback callback, void* param) const {
+    assert(token_);
+    return token_->Traverse(callback, param);
+  }
+
+  void Format(const FormatterDelegate& delegate, std::string& str) const {
+    assert(token_);
+    return token_->Format(delegate, str);
+  }
+
+ private:
+  const Token* token_ = nullptr;
 };
 
 template <class T>
@@ -33,8 +56,8 @@ class ValueToken : public Token {
 
   virtual Value Calculate(void* data) const override { return value_; }
 
-  virtual void Traverse(TraverseCallback callb, void* param) const {
-    callb(this, param);
+  virtual void Traverse(TraverseCallback callback, void* param) const {
+    callback(this, param);
   }
 
   virtual void Format(const FormatterDelegate& delegate,

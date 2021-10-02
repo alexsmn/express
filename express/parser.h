@@ -3,6 +3,9 @@
 #include "express/allocator.h"
 #include "express/express_export.h"
 #include "express/lexem.h"
+#include "express/token.h"
+
+#include <optional>
 
 namespace expression {
 
@@ -19,7 +22,8 @@ class EXPRESS_EXPORT Parser {
 
   Token* CreatePrimaryToken();
   Token* CreateBinaryOperator(int priority = 0);
-  Token* Parse();
+
+  std::optional<PolymorphicToken> Parse();
 
   const Lexem& next_lexem() const { return next_lexem_; }
   void ReadLexem();
