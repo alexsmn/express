@@ -11,6 +11,8 @@ class ParserDelegate;
 
 class EXPRESS_EXPORT Expression : public BasicExpression<PolymorphicToken> {
  public:
+  void Parse(const char* buf);
+
   void Parse(const char* buf,
              LexerDelegate& lexer_delegate,
              ParserDelegate& parser_delegate,
