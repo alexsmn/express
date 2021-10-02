@@ -3,6 +3,7 @@
 #include "express/express_export.h"
 #include "express/value.h"
 
+#include <cassert>
 #include <string>
 
 namespace expression {

@@ -7,9 +7,13 @@
 
 namespace expression {
 
+class Allocator;
 class Token;
 
-typedef bool (*TraverseCallback)(const Token* lexem, void* param);
+template <class BasicToken>
+using BasicTraverseCallback = bool (*)(const BasicToken* token, void* param);
+
+using TraverseCallback = BasicTraverseCallback<Token>;
 
 class EXPRESS_EXPORT Token {
  public:
@@ -24,7 +28,8 @@ class EXPRESS_EXPORT Token {
 template <class T>
 class ValueToken : public Token {
  public:
-  explicit ValueToken(T value) : value_{value} {}
+  template <class U>
+  explicit ValueToken(U&& value) : value_{std::forward<U>(value)} {}
 
   virtual Value Calculate(void* data) const override { return value_; }
 

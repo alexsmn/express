@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-file(GLOB express_sources
+file(GLOB express_sources CONFIGURE_DEPENDS
   "express/*.cpp"
   "express/*.h"
 )
