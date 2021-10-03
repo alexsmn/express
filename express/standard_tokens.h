@@ -4,9 +4,10 @@
 
 namespace expression {
 
-class OperUna : public Token {
+class UnaryOperatorToken : public Token {
  public:
-  OperUna(char oper, Token* operand) : oper_{oper}, operand_{operand} {}
+  UnaryOperatorToken(char oper, Token* operand)
+      : oper_{oper}, operand_{operand} {}
 
   virtual Value Calculate(void* data) const override {
     auto val = operand_->Calculate(data);
@@ -24,9 +25,9 @@ class OperUna : public Token {
     return val;
   }
 
-  virtual void Traverse(TraverseCallback callb, void* param) const override {
-    callb(this, param);
-    callb(operand_, param);
+  virtual void Traverse(TraverseCallback callback, void* param) const override {
+    callback(this, param);
+    callback(operand_, param);
   }
 
   virtual void Format(const FormatterDelegate& delegate,
@@ -40,9 +41,9 @@ class OperUna : public Token {
   Token* operand_;
 };
 
-class OperBin : public Token {
+class BinaryOperatorToken : public Token {
  public:
-  OperBin(char oper, Token* left, Token* right)
+  BinaryOperatorToken(char oper, Token* left, Token* right)
       : oper_{oper}, left_{left}, right_{right} {}
 
   virtual Value Calculate(void* data) const override {
@@ -88,10 +89,10 @@ class OperBin : public Token {
     return val;
   }
 
-  virtual void Traverse(TraverseCallback callb, void* param) const override {
-    callb(this, param);
-    callb(left_, param);
-    callb(right_, param);
+  virtual void Traverse(TraverseCallback callback, void* param) const override {
+    callback(this, param);
+    callback(left_, param);
+    callback(right_, param);
   }
 
   virtual void Format(const FormatterDelegate& delegate,
@@ -119,9 +120,9 @@ class OperBin : public Token {
   Token* right_;
 };
 
-class LexStr : public Token {
+class StringValueToken : public Token {
  public:
-  LexStr(std::string_view str, Allocator& allocator)
+  StringValueToken(std::string_view str, Allocator& allocator)
       : len_{static_cast<int>(str.size())},
         str_{static_cast<char*>(allocator.allocate(len_))} {
     memcpy(str_, str.data(), len_);
@@ -131,8 +132,8 @@ class LexStr : public Token {
     return Value{str_, len_};
   }
 
-  virtual void Traverse(TraverseCallback callb, void* param) const override {
-    callb(this, param);
+  virtual void Traverse(TraverseCallback callback, void* param) const override {
+    callback(this, param);
   }
 
   virtual void Format(const FormatterDelegate& delegate,
@@ -147,17 +148,17 @@ class LexStr : public Token {
   char* str_;
 };
 
-class LexLP : public Token {
+class ParenthesesToken : public Token {
  public:
-  explicit LexLP(Token* oper) : oper_{oper} {}
+  explicit ParenthesesToken(Token* oper) : oper_{oper} {}
 
   virtual Value Calculate(void* data) const override {
     return oper_->Calculate(data);
   }
 
-  virtual void Traverse(TraverseCallback callb, void* param) const override {
-    callb(this, param);
-    callb(oper_, param);
+  virtual void Traverse(TraverseCallback callback, void* param) const override {
+    callback(this, param);
+    callback(oper_, param);
   }
 
   virtual void Format(const FormatterDelegate& delegate,

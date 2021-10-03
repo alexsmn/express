@@ -1,8 +1,8 @@
 #pragma once
 
 #include <math.h>
-#include <string.h>
 #include <stdexcept>
+#include <string.h>
 
 namespace expression {
 

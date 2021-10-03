@@ -17,7 +17,8 @@ Token* Parser::CreatePrimaryToken() {
 
   if (lexem.type & OPER_UNA) {
     assert(!(lexem.lexem & LEX_UNA));
-    return CreateToken<OperUna>(allocator_, lexem.lexem, CreatePrimaryToken());
+    return CreateToken<UnaryOperatorToken>(allocator_, lexem.lexem,
+                                           CreatePrimaryToken());
   }
 
   switch (lexem.lexem) {
@@ -55,19 +56,20 @@ Token* Parser::CreatePrimaryToken() {
     case LEX_DBL:
       return CreateToken<ValueToken<double>>(allocator_, lexem._double);
     case LEX_STR:
-      return CreateToken<LexStr>(allocator_, lexem._string, allocator_);
+      return CreateToken<StringValueToken>(allocator_, lexem._string,
+                                           allocator_);
     case LEX_LP: {
-      Token* pos2 = CreateBinaryOperator();
+      Token* inner_token = CreateBinaryOperator();
       if (next_lexem_.lexem != LEX_RP)
         throw std::runtime_error("missing ')'");
       ReadLexem();
-      return CreateToken<LexLP>(allocator_, pos2);
+      return CreateToken<ParenthesesToken>(allocator_, inner_token);
     }
   }
 
-  Token* pos = delegate_.CreateToken(allocator_, lexem, *this);
-  if (pos)
-    return pos;
+  Token* token = delegate_.CreateToken(allocator_, lexem, *this);
+  if (token)
+    return token;
 
   throw std::runtime_error("unexpected primary token");
 }
@@ -80,7 +82,7 @@ Token* Parser::CreateBinaryOperator(int priority) {
     ReadLexem();
     Token* right = CreateBinaryOperator(priority2 + 1);
     // Write operator
-    left = CreateToken<OperBin>(allocator_, oper, left, right);
+    left = CreateToken<BinaryOperatorToken>(allocator_, oper, left, right);
   }
   return left;
 }
