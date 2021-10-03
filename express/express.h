@@ -2,6 +2,7 @@
 
 #include "express/basic_expression.h"
 #include "express/express_export.h"
+#include "express/parser_delegate.h"
 #include "express/token.h"
 
 namespace expression {
@@ -15,7 +16,7 @@ class EXPRESS_EXPORT Expression : public BasicExpression<PolymorphicToken> {
 
   void Parse(const char* buf,
              LexerDelegate& lexer_delegate,
-             ParserDelegate& parser_delegate,
+             BasicParserDelegate<PolymorphicToken>& parser_delegate,
              int flags = 0);
 
   using BasicExpression::Parse;

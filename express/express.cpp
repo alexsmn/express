@@ -9,13 +9,13 @@ namespace expression {
 
 void Expression::Parse(const char* buf) {
   LexerDelegate lexer_delegate;
-  ParserDelegate parser_delegate;
+  BasicParserDelegate<PolymorphicToken> parser_delegate;
   Parse(buf, lexer_delegate, parser_delegate);
 }
 
 void Expression::Parse(const char* buf,
                        LexerDelegate& lexer_delegate,
-                       ParserDelegate& parser_delegate,
+                       BasicParserDelegate<PolymorphicToken>& parser_delegate,
                        int flags) {
   Lexer lexer{buf, lexer_delegate, flags};
   Allocator allocator;

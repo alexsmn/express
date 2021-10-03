@@ -4,14 +4,16 @@
 
 namespace expression {
 
-class UnaryOperatorToken : public Token {
+template <class OperandToken>
+class BasicUnaryOperatorToken : public Token {
  public:
-  UnaryOperatorToken(char oper, Token* operand)
-      : oper_{oper}, operand_{operand} {}
+  template <class U>
+  BasicUnaryOperatorToken(char oper, U&& operand)
+      : operator_{oper}, operand_{std::forward<U>(operand)} {}
 
   virtual Value Calculate(void* data) const override {
-    auto val = operand_->Calculate(data);
-    switch (oper_) {
+    auto val = operand_.Calculate(data);
+    switch (operator_) {
       case '-':
         val = -val;
         break;
@@ -27,30 +29,34 @@ class UnaryOperatorToken : public Token {
 
   virtual void Traverse(TraverseCallback callback, void* param) const override {
     callback(this, param);
-    callback(operand_, param);
+    operand_.Traverse(callback, param);
   }
 
   virtual void Format(const FormatterDelegate& delegate,
                       std::string& str) const override {
-    str += oper_;
-    operand_->Format(delegate, str);
+    str += operator_;
+    operand_.Format(delegate, str);
   }
 
  private:
-  const char oper_;
-  Token* operand_;
+  const char operator_;
+  const OperandToken operand_;
 };
 
-class BinaryOperatorToken : public Token {
+template <class OperandToken>
+class BasicBinaryOperatorToken : public Token {
  public:
-  BinaryOperatorToken(char oper, Token* left, Token* right)
-      : oper_{oper}, left_{left}, right_{right} {}
+  template <class L, class R>
+  BasicBinaryOperatorToken(char oper, L&& left, R&& right)
+      : operator_{oper},
+        left_{std::forward<L>(left)},
+        right_{std::forward<R>(right)} {}
 
   virtual Value Calculate(void* data) const override {
-    auto val = left_->Calculate(data);
-    auto rval = right_->Calculate(data);
+    auto val = left_.Calculate(data);
+    auto rval = right_.Calculate(data);
 
-    switch (oper_) {
+    switch (operator_) {
       case '+':
         val += rval;
         break;
@@ -91,15 +97,15 @@ class BinaryOperatorToken : public Token {
 
   virtual void Traverse(TraverseCallback callback, void* param) const override {
     callback(this, param);
-    callback(left_, param);
-    callback(right_, param);
+    left_.Traverse(callback, param);
+    right_.Traverse(callback, param);
   }
 
   virtual void Format(const FormatterDelegate& delegate,
                       std::string& str) const override {
-    left_->Format(delegate, str);
+    left_.Format(delegate, str);
     str += ' ';
-    switch (oper_) {
+    switch (operator_) {
       case 'l':
         str += "<=";
         break;
@@ -107,17 +113,17 @@ class BinaryOperatorToken : public Token {
         str += ">=";
         break;
       default:
-        str += oper_;
+        str += operator_;
         break;
     }
     str += ' ';
-    right_->Format(delegate, str);
+    right_.Format(delegate, str);
   }
 
  private:
-  const char oper_;
-  Token* left_;
-  Token* right_;
+  const char operator_;
+  const OperandToken left_;
+  const OperandToken right_;
 };
 
 class StringValueToken : public Token {
@@ -148,28 +154,31 @@ class StringValueToken : public Token {
   char* str_;
 };
 
+template <class NestedToken>
 class ParenthesesToken : public Token {
  public:
-  explicit ParenthesesToken(Token* oper) : oper_{oper} {}
+  template <class U>
+  explicit ParenthesesToken(U&& nested_token)
+      : nested_token_{std::forward<U>(nested_token)} {}
 
   virtual Value Calculate(void* data) const override {
-    return oper_->Calculate(data);
+    return nested_token_.Calculate(data);
   }
 
   virtual void Traverse(TraverseCallback callback, void* param) const override {
     callback(this, param);
-    callback(oper_, param);
+    nested_token_.Traverse(callback, param);
   }
 
   virtual void Format(const FormatterDelegate& delegate,
                       std::string& str) const override {
     str += '(';
-    oper_->Format(delegate, str);
+    nested_token_.Format(delegate, str);
     str += ')';
   }
 
  private:
-  Token* oper_;
+  const NestedToken nested_token_;
 };
 
 }  // namespace expression

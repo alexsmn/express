@@ -3,25 +3,27 @@
 #include "express/allocator.h"
 #include "express/express_export.h"
 #include "express/lexem.h"
+#include "express/parser_delegate.h"
 #include "express/token.h"
 
 #include <optional>
 
 namespace expression {
 
-class ParserDelegate;
 class Token;
 class Lexer;
 
 class EXPRESS_EXPORT Parser {
  public:
-  Parser(Lexer& lexer, Allocator& allocator, ParserDelegate& delegate);
+  Parser(Lexer& lexer,
+         Allocator& allocator,
+         BasicParserDelegate<PolymorphicToken>& delegate);
 
   Parser(const Parser&) = delete;
   Parser& operator=(const Parser&) = delete;
 
-  Token* CreatePrimaryToken();
-  Token* CreateBinaryOperator(int priority = 0);
+  PolymorphicToken MakePrimaryToken();
+  PolymorphicToken MakeBinaryOperator(int priority = 0);
 
   std::optional<PolymorphicToken> Parse();
 
@@ -31,7 +33,7 @@ class EXPRESS_EXPORT Parser {
  private:
   Lexer& lexer_;
   Allocator& allocator_;
-  ParserDelegate& delegate_;
+  BasicParserDelegate<PolymorphicToken>& delegate_;
 
   Lexem next_lexem_{LEX_END};
 };

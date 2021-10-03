@@ -66,50 +66,52 @@ class ConditionalFunction : public Function {
   ConditionalFunction() : Function("If", 3) {}
 
   virtual Token* CreateToken(Allocator& allocator,
-                             Token** arguments,
+                             const Token** arguments,
                              int count) const override {
     assert(count == 3);
-    return expression::CreateToken<TokenImpl>(allocator, arguments[0],
-                                              arguments[1], arguments[2]);
+    return expression::CreateToken<TokenImpl>(allocator, *arguments[0],
+                                              *arguments[1], *arguments[2]);
   }
 
  private:
   class TokenImpl : public Token {
    public:
-    TokenImpl(Token* condition, Token* when_true, Token* when_false)
+    TokenImpl(const Token& condition,
+              const Token& when_true,
+              const Token& when_false)
         : condition_{condition},
           when_true_{when_true},
           when_false_{when_false} {}
 
     virtual Value Calculate(void* data) const override {
-      auto cond = condition_->Calculate(data);
-
-      Token* arg = cond ? when_true_ : when_false_;
-      return arg->Calculate(data);
+      auto condition_value = condition_.Calculate(data);
+      const Token& arg = condition_value ? when_true_ : when_false_;
+      return arg.Calculate(data);
     }
 
-    virtual void Traverse(TraverseCallback callb, void* param) const override {
-      callb(this, param);
-      callb(condition_, param);
-      callb(when_true_, param);
-      callb(when_false_, param);
+    virtual void Traverse(TraverseCallback callback,
+                          void* param) const override {
+      callback(this, param);
+      callback(&condition_, param);
+      callback(&when_true_, param);
+      callback(&when_false_, param);
     }
 
     virtual void Format(const FormatterDelegate& delegate,
                         std::string& str) const override {
       str += "If(";
-      condition_->Format(delegate, str);
+      condition_.Format(delegate, str);
       str += ", ";
-      when_true_->Format(delegate, str);
+      when_true_.Format(delegate, str);
       str += ", ";
-      when_false_->Format(delegate, str);
+      when_false_.Format(delegate, str);
       str += ')';
     }
 
    private:
-    Token* condition_;
-    Token* when_true_;
-    Token* when_false_;
+    const Token& condition_;
+    const Token& when_true_;
+    const Token& when_false_;
   };
 };
 
@@ -119,28 +121,29 @@ class VariadicFunction : public Function {
   explicit VariadicFunction(std::string_view name) : Function{name, -1} {}
 
   virtual Token* CreateToken(Allocator& allocator,
-                             Token** arguments,
+                             const Token** arguments,
                              int count) const override {
     // TODO: Create binary token.
-    return expression::CreateToken<TokenImpl>(allocator, this, arguments, count,
-                                              allocator);
+    return expression::CreateToken<TokenImpl>(allocator, *this, arguments,
+                                              count, allocator);
   }
 
  private:
   class TokenImpl : public Token {
    public:
-    TokenImpl(const VariadicFunction* fun,
-              Token** params,
+    TokenImpl(const VariadicFunction& fun,
+              const Token** params,
               int count,
               Allocator& allocator)
         : fun_{fun},
-          params_{
-              static_cast<Token**>(allocator.allocate(count * sizeof(Token*)))},
+          params_{static_cast<const Token**>(
+              allocator.allocate(count * sizeof(Token*)))},
           count_{count} {
       std::copy(params, params + count, params_);
     }
 
     virtual Value Calculate(void* data) const override {
+      assert(count_ >= 1);
       auto val = params_[0]->Calculate(data);
       for (int i = 1; i < count_; i++) {
         auto pval = params_[i]->Calculate(data);
@@ -149,15 +152,15 @@ class VariadicFunction : public Function {
       return val;
     }
 
-    virtual void Traverse(TraverseCallback callb, void* param) const {
-      callb(this, param);
+    virtual void Traverse(TraverseCallback callback, void* param) const {
+      callback(this, param);
       for (int i = 0; i < count_; ++i)
-        callb(params_[i], param);
+        callback(params_[i], param);
     }
 
     virtual void Format(const FormatterDelegate& delegate,
                         std::string& str) const override {
-      str += fun_->name;
+      str += fun_.name;
       str += '(';
       if (count_ != 0) {
         params_[0]->Format(delegate, str);
@@ -170,9 +173,9 @@ class VariadicFunction : public Function {
     }
 
    private:
-    const VariadicFunction* fun_;
-    Token** params_;
-    int count_;
+    const VariadicFunction& fun_;
+    const Token** params_;
+    const int count_;
   };
 };
 
@@ -184,39 +187,39 @@ class MathFunction1 : public Function {
       : Function{name, 1}, fun_(fun) {}
 
   virtual Token* CreateToken(Allocator& allocator,
-                             Token** arguments,
+                             const Token** arguments,
                              int count) const {
     assert(count == 1);
-    return expression::CreateToken<TokenImpl>(allocator, this, arguments[0]);
+    return expression::CreateToken<TokenImpl>(allocator, *this, *arguments[0]);
   }
 
  private:
   class TokenImpl : public Token {
    public:
-    TokenImpl(const MathFunction1* fun, Token* argument)
+    TokenImpl(const MathFunction1& fun, const Token& argument)
         : fun_(fun), argument_{argument} {}
 
     virtual Value Calculate(void* data) const override {
-      Value v = argument_->Calculate(data);
-      return fun_->fun_(v);
+      Value v = argument_.Calculate(data);
+      return fun_.fun_(v);
     }
 
-    virtual void Traverse(TraverseCallback callb, void* param) const {
-      callb(this, param);
-      callb(argument_, param);
+    virtual void Traverse(TraverseCallback callback, void* param) const {
+      callback(this, param);
+      callback(&argument_, param);
     }
 
     virtual void Format(const FormatterDelegate& delegate,
                         std::string& str) const override {
-      str += fun_->name;
+      str += fun_.name;
       str += '(';
-      argument_->Format(delegate, str);
+      argument_.Format(delegate, str);
       str += ')';
     }
 
    private:
-    const MathFunction1* fun_;
-    Token* argument_;
+    const MathFunction1& fun_;
+    const Token& argument_;
   };
 
   const fun_t fun_;
@@ -230,45 +233,45 @@ class MathFunction2 : public Function {
       : Function{name, 2}, fun_{fun} {}
 
   virtual Token* CreateToken(Allocator& allocator,
-                             Token** arguments,
+                             const Token** arguments,
                              int count) const {
     assert(count == 2);
-    return expression::CreateToken<TokenImpl>(allocator, this, arguments[0],
-                                              arguments[1]);
+    return expression::CreateToken<TokenImpl>(allocator, *this, *arguments[0],
+                                              *arguments[1]);
   }
 
  private:
   class TokenImpl : public Token {
    public:
-    TokenImpl(const MathFunction2* fun, Token* left, Token* right)
-        : fun_(fun), left_{left}, right_{right} {}
+    TokenImpl(const MathFunction2& fun, const Token& left, const Token& right)
+        : fun_{fun}, left_{left}, right_{right} {}
 
     virtual Value Calculate(void* data) const override {
-      auto v1 = left_->Calculate(data);
-      auto v2 = right_->Calculate(data);
-      return fun_->fun_(v1, v2);
+      auto v1 = left_.Calculate(data);
+      auto v2 = right_.Calculate(data);
+      return fun_.fun_(v1, v2);
     }
 
-    virtual void Traverse(TraverseCallback callb, void* param) const {
-      callb(this, param);
-      callb(left_, param);
-      callb(right_, param);
+    virtual void Traverse(TraverseCallback callback, void* param) const {
+      callback(this, param);
+      callback(&left_, param);
+      callback(&right_, param);
     }
 
     virtual void Format(const FormatterDelegate& delegate,
                         std::string& str) const override {
-      str += fun_->name;
+      str += fun_.name;
       str += '(';
-      left_->Format(delegate, str);
+      left_.Format(delegate, str);
       str += ", ";
-      right_->Format(delegate, str);
+      right_.Format(delegate, str);
       str += ')';
     }
 
    private:
-    const MathFunction2* fun_;
-    Token* left_;
-    Token* right_;
+    const MathFunction2& fun_;
+    const Token& left_;
+    const Token& right_;
   };
 
   const fun_t fun_;

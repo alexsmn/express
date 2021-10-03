@@ -11,7 +11,7 @@ target_include_directories(express PUBLIC ".")
 
 target_compile_definitions(express PRIVATE -DEXPRESS_IMPLEMENTATION)
 
-target_compile_features(express PUBLIC cxx_std_17)
+target_compile_features(express PUBLIC cxx_std_20)
 
 enable_testing()
 add_subdirectory(tests)

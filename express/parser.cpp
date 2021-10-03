@@ -8,81 +8,87 @@
 
 namespace expression {
 
-Parser::Parser(Lexer& lexer, Allocator& allocator, ParserDelegate& delegate)
+Parser::Parser(Lexer& lexer,
+               Allocator& allocator,
+               BasicParserDelegate<PolymorphicToken>& delegate)
     : lexer_{lexer}, allocator_{allocator}, delegate_{delegate} {}
 
-Token* Parser::CreatePrimaryToken() {
+PolymorphicToken Parser::MakePrimaryToken() {
   auto lexem = next_lexem_;
   ReadLexem();
 
   if (lexem.type & OPER_UNA) {
     assert(!(lexem.lexem & LEX_UNA));
-    return CreateToken<UnaryOperatorToken>(allocator_, lexem.lexem,
-                                           CreatePrimaryToken());
+    return MakePolymorphicToken<BasicUnaryOperatorToken<PolymorphicToken>>(
+        allocator_, lexem.lexem, MakePrimaryToken());
   }
 
   switch (lexem.lexem) {
     case LEX_NAME:
-      if (next_lexem_.lexem == expression::LEX_LP) {
+      if (next_lexem_.lexem == LEX_LP) {
         // function
-        const auto* fun = delegate_.FindFunction(lexem._string);
-        if (!fun) {
+        const auto* function = delegate_.FindBasicFunction(lexem._string);
+        if (!function) {
           throw std::runtime_error{std::string{"function was not found: "} +
                                    std::string{next_lexem_._string}};
         }
         // read parameters
-        expression::Token* params[256];
-        unsigned int nparam = 0;
+        std::vector<PolymorphicToken> arguments;
         ReadLexem();
-        if (next_lexem_.lexem != expression::LEX_RP) {
+        if (next_lexem_.lexem != LEX_RP) {
           for (;;) {
-            params[nparam++] = CreateBinaryOperator();
-            if (next_lexem_.lexem != expression::LEX_COMMA)
+            arguments.emplace_back(MakeBinaryOperator());
+            if (next_lexem_.lexem != LEX_COMMA)
               break;
             ReadLexem();
           }
-          if (next_lexem_.lexem != expression::LEX_RP)
+          if (next_lexem_.lexem != LEX_RP)
             throw std::runtime_error("missing ')'");
         }
         ReadLexem();
-        if (fun->params != -1 && fun->params != nparam) {
+        if (function->params != -1 && function->params != arguments.size()) {
           throw std::runtime_error{std::string{"parameters expected: "} +
-                                   std::to_string(fun->params)};
+                                   std::to_string(function->params)};
         }
-        return fun->CreateToken(allocator_, params, nparam);
+        return function->MakeToken(allocator_, arguments.data(),
+                                   arguments.size());
       }
       break;
 
     case LEX_DBL:
-      return CreateToken<ValueToken<double>>(allocator_, lexem._double);
+      return MakePolymorphicToken<ValueToken<double>>(allocator_,
+                                                      lexem._double);
     case LEX_STR:
-      return CreateToken<StringValueToken>(allocator_, lexem._string,
-                                           allocator_);
+      return MakePolymorphicToken<StringValueToken>(allocator_, lexem._string,
+                                                    allocator_);
     case LEX_LP: {
-      Token* inner_token = CreateBinaryOperator();
+      auto nested_token = MakeBinaryOperator();
       if (next_lexem_.lexem != LEX_RP)
         throw std::runtime_error("missing ')'");
       ReadLexem();
-      return CreateToken<ParenthesesToken>(allocator_, inner_token);
+      return MakePolymorphicToken<ParenthesesToken<PolymorphicToken>>(
+          allocator_, std::move(nested_token));
     }
   }
 
-  Token* token = delegate_.CreateToken(allocator_, lexem, *this);
-  if (token)
-    return token;
+  std::optional<PolymorphicToken> custom_token =
+      delegate_.MakeCustomToken(allocator_, lexem, *this);
+  if (custom_token.has_value())
+    return std::move(*custom_token);
 
   throw std::runtime_error("unexpected primary token");
 }
 
-Token* Parser::CreateBinaryOperator(int priority) {
-  Token* left = CreatePrimaryToken();
+PolymorphicToken Parser::MakeBinaryOperator(int priority) {
+  auto left = MakePrimaryToken();
   while (next_lexem_.type & OPER_BIN && next_lexem_.priority >= priority) {
     char oper = next_lexem_.lexem;
     char priority2 = next_lexem_.priority;
     ReadLexem();
-    Token* right = CreateBinaryOperator(priority2 + 1);
+    auto right = MakeBinaryOperator(priority2 + 1);
     // Write operator
-    left = CreateToken<BinaryOperatorToken>(allocator_, oper, left, right);
+    left = MakePolymorphicToken<BasicBinaryOperatorToken<PolymorphicToken>>(
+        allocator_, oper, std::move(left), std::move(right));
   }
   return left;
 }
@@ -90,12 +96,11 @@ Token* Parser::CreateBinaryOperator(int priority) {
 std::optional<PolymorphicToken> Parser::Parse() {
   ReadLexem();
 
-  const Token* root_token = CreateBinaryOperator();
+  auto root_token = MakeBinaryOperator();
   if (next_lexem_.lexem != LEX_END)
     return std::nullopt;
 
-  assert(root_token);
-  return PolymorphicToken{*root_token};
+  return root_token;
 }
 
 void Parser::ReadLexem() {

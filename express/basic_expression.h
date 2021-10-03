@@ -3,6 +3,7 @@
 #include "express/allocator.h"
 
 #include <optional>
+#include <stdexcept>
 #include <string>
 
 namespace expression {

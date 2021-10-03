@@ -37,29 +37,30 @@ class TestVariableToken : public Token {
 
 using TestVariables = std::unordered_map<std::string_view, Value>;
 
-class TestParserDelegate : public ParserDelegate {
+class TestParserDelegate : public BasicParserDelegate<PolymorphicToken> {
  public:
   explicit TestParserDelegate(TestVariables variables)
       : variables_{std::move(variables)} {}
 
-  virtual Token* CreateToken(Allocator& allocator,
-                             const Lexem& lexem,
-                             Parser& parser) override {
+  virtual std::optional<PolymorphicToken> MakeCustomToken(
+      Allocator& allocator,
+      const Lexem& lexem,
+      Parser& parser) override {
     if (lexem.lexem == LEX_NAME)
-      return CreateVariableToken(allocator, lexem, parser);
-    return nullptr;
+      return MakeVariableToken(allocator, lexem, parser);
+    return std::nullopt;
   }
 
  private:
-  Token* CreateVariableToken(Allocator& allocator,
-                             const Lexem& lexem,
-                             Parser& parser) {
+  std::optional<PolymorphicToken> MakeVariableToken(Allocator& allocator,
+                                                    const Lexem& lexem,
+                                                    Parser& parser) {
     auto i = variables_.find(lexem._string);
     if (i == variables_.end())
-      return nullptr;
+      return std::nullopt;
 
-    return expression::CreateToken<TestVariableToken>(allocator, i->first,
-                                                      i->second);
+    return expression::MakePolymorphicToken<TestVariableToken>(
+        allocator, i->first, i->second);
   }
 
   const TestVariables variables_;
@@ -112,7 +113,7 @@ int GetTokenCount(const char* formula) {
 }
 
 TEST(Express, Traverse) {
-  EXPECT_EQ(3, GetTokenCount("1 + 2 + 3 + 4 + 5"));
+  EXPECT_EQ(9, GetTokenCount("1 + 2 + 3 + 4 + 5"));
 }
 
 }  // namespace expression

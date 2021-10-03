@@ -1,5 +1,6 @@
 #pragma once
 
+#include "express/allocator.h"
 #include "express/formatter_delegate.h"
 #include "express/value.h"
 
@@ -77,9 +78,23 @@ inline Token* CreateToken(Allocator& allocator, Args&&... args) {
   return new (data) T(std::forward<Args>(args)...);
 }
 
-template <class T>
-inline Token* CreateValueToken(Allocator& allocator, T value) {
-  return CreateToken<ValueToken<T>>(allocator, value);
+template <class T, class V>
+inline Token* CreateValueToken(Allocator& allocator, V&& value) {
+  return CreateToken<ValueToken<T>>(allocator, std::forward<V>(value));
+}
+
+template <class T, class... Args>
+inline PolymorphicToken MakePolymorphicToken(Allocator& allocator,
+                                             Args&&... args) {
+  return PolymorphicToken{
+      *CreateToken<T>(allocator, std::forward<Args>(args)...)};
+}
+
+template <class T, class V>
+inline PolymorphicToken MakePolymorphicValueToken(Allocator& allocator,
+                                                  V&& value) {
+  return PolymorphicToken{
+      *CreateValueToken<T>(allocator, std::forward<V>(value))};
 }
 
 }  // namespace expression
