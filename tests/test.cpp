@@ -45,16 +45,17 @@ class TestParserDelegate : public BasicParserDelegate<PolymorphicToken> {
   virtual std::optional<PolymorphicToken> MakeCustomToken(
       Allocator& allocator,
       const Lexem& lexem,
-      Parser& parser) override {
+      BasicParser<PolymorphicToken>& parser) override {
     if (lexem.lexem == LEX_NAME)
       return MakeVariableToken(allocator, lexem, parser);
     return std::nullopt;
   }
 
  private:
-  std::optional<PolymorphicToken> MakeVariableToken(Allocator& allocator,
-                                                    const Lexem& lexem,
-                                                    Parser& parser) {
+  std::optional<PolymorphicToken> MakeVariableToken(
+      Allocator& allocator,
+      const Lexem& lexem,
+      BasicParser<PolymorphicToken>& parser) {
     auto i = variables_.find(lexem._string);
     if (i == variables_.end())
       return std::nullopt;

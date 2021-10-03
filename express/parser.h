@@ -10,7 +10,6 @@
 
 namespace expression {
 
-class Token;
 class Lexer;
 
 template <class BasicToken>
@@ -25,6 +24,7 @@ class BasicParser {
 
   BasicToken MakePrimaryToken();
   BasicToken MakeBinaryOperator(int priority = 0);
+  BasicToken MakeFunctionToken(std::string_view name);
 
   std::optional<BasicToken> Parse();
 
@@ -59,34 +59,8 @@ inline BasicToken BasicParser<BasicToken>::MakePrimaryToken() {
 
   switch (lexem.lexem) {
     case LEX_NAME:
-      if (next_lexem_.lexem == LEX_LP) {
-        // function
-        const auto* function = delegate_.FindBasicFunction(lexem._string);
-        if (!function) {
-          throw std::runtime_error{std::string{"function was not found: "} +
-                                   std::string{next_lexem_._string}};
-        }
-        // read parameters
-        std::vector<PolymorphicToken> arguments;
-        ReadLexem();
-        if (next_lexem_.lexem != LEX_RP) {
-          for (;;) {
-            arguments.emplace_back(MakeBinaryOperator());
-            if (next_lexem_.lexem != LEX_COMMA)
-              break;
-            ReadLexem();
-          }
-          if (next_lexem_.lexem != LEX_RP)
-            throw std::runtime_error("missing ')'");
-        }
-        ReadLexem();
-        if (function->params != -1 && function->params != arguments.size()) {
-          throw std::runtime_error{std::string{"parameters expected: "} +
-                                   std::to_string(function->params)};
-        }
-        return function->MakeToken(allocator_, arguments.data(),
-                                   arguments.size());
-      }
+      if (next_lexem_.lexem == LEX_LP)
+        return MakeFunctionToken(lexem._string);
       break;
 
     case LEX_DBL:
@@ -122,7 +96,7 @@ inline BasicToken BasicParser<BasicToken>::MakeBinaryOperator(int priority) {
     ReadLexem();
     auto right = MakeBinaryOperator(priority2 + 1);
     // Write operator
-    left = MakePolymorphicToken<BasicBinaryOperatorToken<PolymorphicToken>>(
+    left = MakePolymorphicToken<BasicBinaryOperatorToken<BasicToken>>(
         allocator_, oper, std::move(left), std::move(right));
   }
   return left;
@@ -142,6 +116,40 @@ inline std::optional<BasicToken> BasicParser<BasicToken>::Parse() {
 template <class BasicToken>
 inline void BasicParser<BasicToken>::ReadLexem() {
   next_lexem_ = lexer_.ReadLexem();
+}
+
+template <class BasicToken>
+inline BasicToken BasicParser<BasicToken>::MakeFunctionToken(
+    std::string_view name) {
+  // function
+  const auto* function = delegate_.FindBasicFunction(name);
+  if (!function) {
+    throw std::runtime_error{std::string{"function was not found: "} +
+                             std::string{next_lexem_._string}};
+  }
+
+  // read parameters
+  std::vector<BasicToken> arguments;
+  ReadLexem();
+  if (next_lexem_.lexem != LEX_RP) {
+    for (;;) {
+      arguments.emplace_back(MakeBinaryOperator());
+      if (next_lexem_.lexem != LEX_COMMA)
+        break;
+      ReadLexem();
+    }
+    if (next_lexem_.lexem != LEX_RP)
+      throw std::runtime_error("missing ')'");
+  }
+
+  ReadLexem();
+
+  if (function->params != -1 && function->params != arguments.size()) {
+    throw std::runtime_error{std::string{"parameters expected: "} +
+                             std::to_string(function->params)};
+  }
+
+  return function->MakeToken(allocator_, arguments.data(), arguments.size());
 }
 
 }  // namespace expression
