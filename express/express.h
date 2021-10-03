@@ -7,6 +7,7 @@
 
 namespace expression {
 
+class Lexer;
 class LexerDelegate;
 class ParserDelegate;
 
@@ -16,7 +17,7 @@ class EXPRESS_EXPORT Expression : public BasicExpression<PolymorphicToken> {
 
   void Parse(const char* buf,
              LexerDelegate& lexer_delegate,
-             BasicParserDelegate<PolymorphicToken>& parser_delegate,
+             BasicParserDelegate<Lexer, PolymorphicToken>& parser_delegate,
              int flags = 0);
 
   using BasicExpression::Parse;

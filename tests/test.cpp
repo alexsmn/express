@@ -1,5 +1,6 @@
 #include "express/express.h"
 
+#include "express/lexer.h"
 #include "express/lexer_delegate.h"
 #include "express/parser_delegate.h"
 
@@ -37,7 +38,7 @@ class TestVariableToken : public Token {
 
 using TestVariables = std::unordered_map<std::string_view, Value>;
 
-class TestParserDelegate : public BasicParserDelegate<PolymorphicToken> {
+class TestParserDelegate : public BasicParserDelegate<Lexer, PolymorphicToken> {
  public:
   explicit TestParserDelegate(TestVariables variables)
       : variables_{std::move(variables)} {}
@@ -45,7 +46,7 @@ class TestParserDelegate : public BasicParserDelegate<PolymorphicToken> {
   virtual std::optional<PolymorphicToken> MakeCustomToken(
       Allocator& allocator,
       const Lexem& lexem,
-      BasicParser<PolymorphicToken>& parser) override {
+      BasicParser<Lexer, PolymorphicToken>& parser) override {
     if (lexem.lexem == LEX_NAME)
       return MakeVariableToken(allocator, lexem, parser);
     return std::nullopt;
@@ -55,7 +56,7 @@ class TestParserDelegate : public BasicParserDelegate<PolymorphicToken> {
   std::optional<PolymorphicToken> MakeVariableToken(
       Allocator& allocator,
       const Lexem& lexem,
-      BasicParser<PolymorphicToken>& parser) {
+      BasicParser<Lexer, PolymorphicToken>& parser) {
     auto i = variables_.find(lexem._string);
     if (i == variables_.end())
       return std::nullopt;

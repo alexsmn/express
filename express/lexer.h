@@ -11,6 +11,8 @@ class LexerDelegate;
 
 class EXPRESS_EXPORT Lexer {
  public:
+  typedef Lexem Lexem;
+
   Lexer(const char* buf, LexerDelegate& delegate, int flags);
 
   Lexer(const Lexer&) = delete;

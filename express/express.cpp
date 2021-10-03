@@ -9,17 +9,19 @@ namespace expression {
 
 void Expression::Parse(const char* buf) {
   LexerDelegate lexer_delegate;
-  BasicParserDelegate<PolymorphicToken> parser_delegate;
+  BasicParserDelegate<Lexer, PolymorphicToken> parser_delegate;
   Parse(buf, lexer_delegate, parser_delegate);
 }
 
-void Expression::Parse(const char* buf,
-                       LexerDelegate& lexer_delegate,
-                       BasicParserDelegate<PolymorphicToken>& parser_delegate,
-                       int flags) {
+void Expression::Parse(
+    const char* buf,
+    LexerDelegate& lexer_delegate,
+    BasicParserDelegate<Lexer, PolymorphicToken>& parser_delegate,
+    int flags) {
   Lexer lexer{buf, lexer_delegate, flags};
   Allocator allocator;
-  BasicParser<PolymorphicToken> parser{lexer, allocator, parser_delegate};
+  BasicParser<Lexer, PolymorphicToken> parser{lexer, allocator,
+                                              parser_delegate};
   BasicExpression::Parse(parser, allocator);
 }
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "express/allocator.h"
-#include "express/lexem.h"
 #include "express/parser_delegate.h"
 #include "express/standard_tokens.h"
 #include "express/token.h"
@@ -10,14 +9,14 @@
 
 namespace expression {
 
-class Lexer;
-
-template <class BasicToken>
+template <class BasicLexer, class BasicToken>
 class BasicParser {
  public:
-  BasicParser(Lexer& lexer,
+  using Lexem = BasicLexer::Lexem;
+
+  BasicParser(BasicLexer& lexer,
               Allocator& allocator,
-              BasicParserDelegate<BasicToken>& delegate);
+              BasicParserDelegate<BasicLexer, BasicToken>& delegate);
 
   BasicParser(const BasicParser&) = delete;
   BasicParser& operator=(const BasicParser&) = delete;
@@ -32,22 +31,22 @@ class BasicParser {
   void ReadLexem();
 
  private:
-  Lexer& lexer_;
+  BasicLexer& lexer_;
   Allocator& allocator_;
-  BasicParserDelegate<BasicToken>& delegate_;
+  BasicParserDelegate<BasicLexer, BasicToken>& delegate_;
 
   Lexem next_lexem_{LEX_END};
 };
 
-template <class BasicToken>
-inline BasicParser<BasicToken>::BasicParser(
-    Lexer& lexer,
+template <class BasicLexer, class BasicToken>
+inline BasicParser<BasicLexer, BasicToken>::BasicParser(
+    BasicLexer& lexer,
     Allocator& allocator,
-    BasicParserDelegate<BasicToken>& delegate)
+    BasicParserDelegate<BasicLexer, BasicToken>& delegate)
     : lexer_{lexer}, allocator_{allocator}, delegate_{delegate} {}
 
-template <class BasicToken>
-inline BasicToken BasicParser<BasicToken>::MakePrimaryToken() {
+template <class BasicLexer, class BasicToken>
+inline BasicToken BasicParser<BasicLexer, BasicToken>::MakePrimaryToken() {
   auto lexem = next_lexem_;
   ReadLexem();
 
@@ -87,8 +86,9 @@ inline BasicToken BasicParser<BasicToken>::MakePrimaryToken() {
   throw std::runtime_error("unexpected primary token");
 }
 
-template <class BasicToken>
-inline BasicToken BasicParser<BasicToken>::MakeBinaryOperator(int priority) {
+template <class BasicLexer, class BasicToken>
+inline BasicToken BasicParser<BasicLexer, BasicToken>::MakeBinaryOperator(
+    int priority) {
   auto left = MakePrimaryToken();
   while (next_lexem_.type & OPER_BIN && next_lexem_.priority >= priority) {
     char oper = next_lexem_.lexem;
@@ -102,8 +102,8 @@ inline BasicToken BasicParser<BasicToken>::MakeBinaryOperator(int priority) {
   return left;
 }
 
-template <class BasicToken>
-inline std::optional<BasicToken> BasicParser<BasicToken>::Parse() {
+template <class BasicLexer, class BasicToken>
+inline std::optional<BasicToken> BasicParser<BasicLexer, BasicToken>::Parse() {
   ReadLexem();
 
   auto root_token = MakeBinaryOperator();
@@ -113,13 +113,13 @@ inline std::optional<BasicToken> BasicParser<BasicToken>::Parse() {
   return root_token;
 }
 
-template <class BasicToken>
-inline void BasicParser<BasicToken>::ReadLexem() {
+template <class BasicLexer, class BasicToken>
+inline void BasicParser<BasicLexer, BasicToken>::ReadLexem() {
   next_lexem_ = lexer_.ReadLexem();
 }
 
-template <class BasicToken>
-inline BasicToken BasicParser<BasicToken>::MakeFunctionToken(
+template <class BasicLexer, class BasicToken>
+inline BasicToken BasicParser<BasicLexer, BasicToken>::MakeFunctionToken(
     std::string_view name) {
   // function
   const auto* function = delegate_.FindBasicFunction(name);
