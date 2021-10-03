@@ -2,6 +2,7 @@
 
 #include "express/lexer.h"
 #include "express/lexer_delegate.h"
+#include "express/parser.h"
 #include "express/parser_delegate.h"
 
 #include <gtest/gtest.h>
@@ -75,8 +76,12 @@ void Validate(Value expected_result,
               TestVariables variables = {}) {
   Expression ex;
   LexerDelegate lexer_delegate;
+  Lexer lexer{formula, lexer_delegate, 0};
+  Allocator allocator;
   TestParserDelegate parser_delegate{std::move(variables)};
-  ex.Parse(formula, lexer_delegate, parser_delegate);
+  BasicParser<Lexer, PolymorphicToken> parser{lexer, allocator,
+                                              parser_delegate};
+  ex.Parse(parser, allocator);
   TestFormatterDelegate formatter_delegate;
   EXPECT_EQ(formula, ex.Format(formatter_delegate));
   EXPECT_EQ(expected_result, ex.Calculate());

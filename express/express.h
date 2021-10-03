@@ -15,11 +15,6 @@ class EXPRESS_EXPORT Expression : public BasicExpression<PolymorphicToken> {
  public:
   void Parse(const char* buf);
 
-  void Parse(const char* buf,
-             LexerDelegate& lexer_delegate,
-             BasicParserDelegate<Lexer, PolymorphicToken>& parser_delegate,
-             int flags = 0);
-
   using BasicExpression::Parse;
 
   void Traverse(TraverseCallback callback, void* param) const;
