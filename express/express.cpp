@@ -19,7 +19,7 @@ void Expression::Parse(const char* buf,
                        int flags) {
   Lexer lexer{buf, lexer_delegate, flags};
   Allocator allocator;
-  Parser parser{lexer, allocator, parser_delegate};
+  BasicParser<PolymorphicToken> parser{lexer, allocator, parser_delegate};
   BasicExpression::Parse(parser, allocator);
 }
 

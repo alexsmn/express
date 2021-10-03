@@ -4,6 +4,55 @@
 
 namespace expression {
 
+template <class T>
+class ValueToken : public Token {
+ public:
+  template <class U>
+  explicit ValueToken(U&& value) : value_{std::forward<U>(value)} {}
+
+  virtual Value Calculate(void* data) const override { return value_; }
+
+  virtual void Traverse(TraverseCallback callback, void* param) const {
+    callback(this, param);
+  }
+
+  virtual void Format(const FormatterDelegate& delegate,
+                      std::string& str) const override {
+    delegate.AppendDouble(str, value_);
+  }
+
+ private:
+  const T value_;
+};
+
+class StringValueToken : public Token {
+ public:
+  StringValueToken(std::string_view str, Allocator& allocator)
+      : len_{static_cast<int>(str.size())},
+        str_{static_cast<char*>(allocator.allocate(len_))} {
+    memcpy(str_, str.data(), len_);
+  }
+
+  virtual Value Calculate(void* data) const override {
+    return Value{str_, len_};
+  }
+
+  virtual void Traverse(TraverseCallback callback, void* param) const override {
+    callback(this, param);
+  }
+
+  virtual void Format(const FormatterDelegate& delegate,
+                      std::string& str) const override {
+    str += '"';
+    str.append(str_, len_);
+    str += '"';
+  }
+
+ private:
+  const int len_;
+  char* str_;
+};
+
 template <class OperandToken>
 class BasicUnaryOperatorToken : public Token {
  public:
@@ -126,34 +175,6 @@ class BasicBinaryOperatorToken : public Token {
   const OperandToken right_;
 };
 
-class StringValueToken : public Token {
- public:
-  StringValueToken(std::string_view str, Allocator& allocator)
-      : len_{static_cast<int>(str.size())},
-        str_{static_cast<char*>(allocator.allocate(len_))} {
-    memcpy(str_, str.data(), len_);
-  }
-
-  virtual Value Calculate(void* data) const override {
-    return Value{str_, len_};
-  }
-
-  virtual void Traverse(TraverseCallback callback, void* param) const override {
-    callback(this, param);
-  }
-
-  virtual void Format(const FormatterDelegate& delegate,
-                      std::string& str) const override {
-    str += '"';
-    str.append(str_, len_);
-    str += '"';
-  }
-
- private:
-  const int len_;
-  char* str_;
-};
-
 template <class NestedToken>
 class ParenthesesToken : public Token {
  public:
@@ -180,5 +201,17 @@ class ParenthesesToken : public Token {
  private:
   const NestedToken nested_token_;
 };
+
+template <class T, class V>
+inline Token* CreateValueToken(Allocator& allocator, V&& value) {
+  return CreateToken<ValueToken<T>>(allocator, std::forward<V>(value));
+}
+
+template <class T, class V>
+inline PolymorphicToken MakePolymorphicValueToken(Allocator& allocator,
+                                                  V&& value) {
+  return PolymorphicToken{
+      *CreateValueToken<T>(allocator, std::forward<V>(value))};
+}
 
 }  // namespace expression

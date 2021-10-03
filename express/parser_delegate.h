@@ -1,6 +1,5 @@
 #pragma once
 
-#include "express/express_export.h"
 #include "express/function.h"
 
 #include <optional>
@@ -10,7 +9,8 @@ namespace expression {
 
 class Allocator;
 class Lexem;
-class Parser;
+template <class BasicToken>
+class BasicParser;
 
 namespace functions {
 extern const Function* FindDefaultFunction(std::string_view name);
@@ -19,9 +19,10 @@ extern const Function* FindDefaultFunction(std::string_view name);
 template <class BasicToken>
 class BasicParserDelegate {
  public:
-  virtual std::optional<BasicToken> MakeCustomToken(Allocator& allocator,
-                                                    const Lexem& lexem,
-                                                    Parser& parser) {
+  virtual std::optional<BasicToken> MakeCustomToken(
+      Allocator& allocator,
+      const Lexem& lexem,
+      BasicParser<BasicToken>& parser) {
     return std::nullopt;
   }
 

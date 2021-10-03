@@ -51,36 +51,10 @@ class PolymorphicToken {
   const Token* token_ = nullptr;
 };
 
-template <class T>
-class ValueToken : public Token {
- public:
-  template <class U>
-  explicit ValueToken(U&& value) : value_{std::forward<U>(value)} {}
-
-  virtual Value Calculate(void* data) const override { return value_; }
-
-  virtual void Traverse(TraverseCallback callback, void* param) const {
-    callback(this, param);
-  }
-
-  virtual void Format(const FormatterDelegate& delegate,
-                      std::string& str) const override {
-    delegate.AppendDouble(str, value_);
-  }
-
- private:
-  const T value_;
-};
-
 template <class T, class... Args>
 inline Token* CreateToken(Allocator& allocator, Args&&... args) {
   auto* data = allocator.allocate(sizeof(T));
   return new (data) T(std::forward<Args>(args)...);
-}
-
-template <class T, class V>
-inline Token* CreateValueToken(Allocator& allocator, V&& value) {
-  return CreateToken<ValueToken<T>>(allocator, std::forward<V>(value));
 }
 
 template <class T, class... Args>
@@ -88,13 +62,6 @@ inline PolymorphicToken MakePolymorphicToken(Allocator& allocator,
                                              Args&&... args) {
   return PolymorphicToken{
       *CreateToken<T>(allocator, std::forward<Args>(args)...)};
-}
-
-template <class T, class V>
-inline PolymorphicToken MakePolymorphicValueToken(Allocator& allocator,
-                                                  V&& value) {
-  return PolymorphicToken{
-      *CreateValueToken<T>(allocator, std::forward<V>(value))};
 }
 
 }  // namespace expression
