@@ -11,7 +11,15 @@ target_include_directories(express PUBLIC ".")
 
 target_compile_definitions(express PRIVATE -DEXPRESS_IMPLEMENTATION)
 
-target_compile_features(express PUBLIC cxx_std_20)
+target_compile_features(express PUBLIC cxx_std_17)
+
+if(WIN32)
+  target_compile_options(express PRIVATE
+    /permissive-
+    /W4
+    /wd4100 # unreferenced formal parameter
+  )
+endif(WIN32)
 
 enable_testing()
 add_subdirectory(tests)

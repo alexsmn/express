@@ -102,14 +102,14 @@ repeat:
 
     default:
       if (!(flags_ & EXPR_CUSTOM_NUM)) {
-        if (auto lexem = ReadNumber())
-          return *lexem;
+        if (auto number_lexem = ReadNumber())
+          return *number_lexem;
       }
       ReadBuffer buffer{buf_};
-      if (auto lexem = delegate_.ReadLexem(buffer))
-        return *lexem;
-      if (auto lexem = ReadStandardName())
-        return *lexem;
+      if (auto custom_lexem = delegate_.ReadLexem(buffer))
+        return *custom_lexem;
+      if (auto name_lexem = ReadStandardName())
+        return *name_lexem;
       throw std::runtime_error("Wrong lexem");
   }
 }

@@ -46,7 +46,7 @@ class Value {
 
   void set_string(const char* string, int length) {
     _clear();
-    _set_string(string, (int)strlen(string));
+    _set_string(string, length);
     type_ = Type::String;
   }
 

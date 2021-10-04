@@ -12,7 +12,7 @@ namespace expression {
 template <class BasicLexer, class BasicToken>
 class BasicParser {
  public:
-  using Lexem = BasicLexer::Lexem;
+  using Lexem = typename BasicLexer::Lexem;
 
   BasicParser(BasicLexer& lexer,
               Allocator& allocator,
@@ -53,7 +53,7 @@ inline BasicToken BasicParser<BasicLexer, BasicToken>::MakePrimaryToken() {
   if (lexem.type & OPER_UNA) {
     assert(!(lexem.lexem & LEX_UNA));
     return MakePolymorphicToken<BasicUnaryOperatorToken<BasicToken>>(
-        allocator_, lexem.lexem, MakePrimaryToken());
+        allocator_, static_cast<char>(lexem.lexem), MakePrimaryToken());
   }
 
   switch (lexem.lexem) {
@@ -91,8 +91,8 @@ inline BasicToken BasicParser<BasicLexer, BasicToken>::MakeBinaryOperator(
     int priority) {
   auto left = MakePrimaryToken();
   while (next_lexem_.type & OPER_BIN && next_lexem_.priority >= priority) {
-    char oper = next_lexem_.lexem;
-    char priority2 = next_lexem_.priority;
+    char oper = static_cast<char>(next_lexem_.lexem);
+    int priority2 = next_lexem_.priority;
     ReadLexem();
     auto right = MakeBinaryOperator(priority2 + 1);
     // Write operator
@@ -144,7 +144,8 @@ inline BasicToken BasicParser<BasicLexer, BasicToken>::MakeFunctionToken(
 
   ReadLexem();
 
-  if (function->params != -1 && function->params != arguments.size()) {
+  if (function->params != -1 &&
+      static_cast<size_t>(function->params) != arguments.size()) {
     throw std::runtime_error{std::string{"parameters expected: "} +
                              std::to_string(function->params)};
   }
