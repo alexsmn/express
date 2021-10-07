@@ -6,6 +6,7 @@
 #include "express/parser_delegate.h"
 
 #include <gtest/gtest.h>
+#include <variant>
 
 namespace expression {
 
@@ -39,26 +40,29 @@ class TestVariableToken : public Token {
 
 using TestVariables = std::unordered_map<std::string_view, Value>;
 
-class TestParserDelegate : public BasicParserDelegate<Lexer, PolymorphicToken> {
+class TestParserDelegate {
  public:
   explicit TestParserDelegate(TestVariables variables)
       : variables_{std::move(variables)} {}
 
-  virtual std::optional<PolymorphicToken> MakeCustomToken(
+  std::optional<PolymorphicToken> MakeCustomToken(
       Allocator& allocator,
       const Lexem& lexem,
-      BasicParser<Lexer, PolymorphicToken>& parser) override {
+      BasicParser<Lexer, PolymorphicToken, TestParserDelegate>& parser) {
     if (lexem.lexem == LEX_NAME)
-      return MakeVariableToken(allocator, lexem, parser);
+      return MakeVariableToken(allocator, lexem._string);
     return std::nullopt;
   }
 
+  const BasicFunction<PolymorphicToken>* FindBasicFunction(
+      std::string_view name) {
+    return functions::FindDefaultFunction<PolymorphicToken>(name);
+  }
+
  private:
-  std::optional<PolymorphicToken> MakeVariableToken(
-      Allocator& allocator,
-      const Lexem& lexem,
-      BasicParser<Lexer, PolymorphicToken>& parser) {
-    auto i = variables_.find(lexem._string);
+  std::optional<PolymorphicToken> MakeVariableToken(Allocator& allocator,
+                                                    std::string_view name) {
+    auto i = variables_.find(name);
     if (i == variables_.end())
       return std::nullopt;
 
@@ -79,8 +83,8 @@ void Validate(Value expected_result,
   Lexer lexer{formula, lexer_delegate, 0};
   Allocator allocator;
   TestParserDelegate parser_delegate{std::move(variables)};
-  BasicParser<Lexer, PolymorphicToken> parser{lexer, allocator,
-                                              parser_delegate};
+  BasicParser<Lexer, PolymorphicToken, TestParserDelegate> parser{
+      lexer, allocator, parser_delegate};
   ex.Parse(parser, allocator);
   TestFormatterDelegate formatter_delegate;
   EXPECT_EQ(formula, ex.Format(formatter_delegate));
@@ -121,6 +125,29 @@ int GetTokenCount(const char* formula) {
 
 TEST(Express, Traverse) {
   EXPECT_EQ(9, GetTokenCount("1 + 2 + 3 + 4 + 5"));
+}
+
+TEST(Expression, CustomExpression) {
+  struct CustomToken {
+    explicit CustomToken(int i) : x{i} {}
+    explicit CustomToken(const Token* token) : x{token} {}
+
+    double Calculate(void* data) const {
+      if (auto* i = std::get_if<int>(&x))
+        return *i;
+      return std::get<const Token*>(x)->Calculate(data);
+    }
+
+    void Format(const FormatterDelegate& delegate, std::string& str) const {}
+
+    void Traverse(TraverseCallback callback, void* param) const {}
+
+    std::variant<int, const Token*> x;
+  };
+
+  BasicExpression<CustomToken> e;
+  e.Parse("5 + 6");
+  auto value = e.Calculate(nullptr);
 }
 
 }  // namespace expression

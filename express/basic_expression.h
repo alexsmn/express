@@ -1,6 +1,9 @@
 #pragma once
 
 #include "express/allocator.h"
+#include "express/lexer.h"
+#include "express/lexer_delegate.h"
+#include "express/parser.h"
 
 #include <optional>
 #include <stdexcept>
@@ -26,6 +29,8 @@ class BasicExpression {
     allocator_.swap(other.allocator_);
     std::swap(root_token_, other.root_token_);
   }
+
+  void Parse(const char* buf);
 
   template <class Parser>
   void Parse(Parser& parser, Allocator& allocator);
@@ -58,6 +63,17 @@ struct TraverseAdapter {
 };
 
 }  // namespace
+
+template <class BasicToken>
+void BasicExpression<BasicToken>::Parse(const char* buf) {
+  LexerDelegate lexer_delegate;
+  Lexer lexer{buf, lexer_delegate, 0};
+  Allocator allocator;
+  BasicParserDelegate<Lexer, BasicToken> parser_delegate;
+  BasicParser<Lexer, BasicToken, decltype(parser_delegate)> parser{
+      lexer, allocator, parser_delegate};
+  Parse(parser, allocator);
+}
 
 template <class BasicToken>
 template <class Parser>

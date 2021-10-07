@@ -13,8 +13,6 @@ class ParserDelegate;
 
 class EXPRESS_EXPORT Expression : public BasicExpression<PolymorphicToken> {
  public:
-  void Parse(const char* buf);
-
   using BasicExpression::Parse;
 
   void Traverse(TraverseCallback callback, void* param) const;

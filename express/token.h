@@ -25,7 +25,7 @@ class EXPRESS_EXPORT Token {
 
 class PolymorphicToken {
  public:
-  explicit PolymorphicToken(const Token& token) : token_{&token} {}
+  explicit PolymorphicToken(const Token* token) : token_{token} {}
 
   PolymorphicToken(PolymorphicToken&&) = default;
   PolymorphicToken& operator=(PolymorphicToken&&) = default;
@@ -61,7 +61,7 @@ template <class T, class... Args>
 inline PolymorphicToken MakePolymorphicToken(Allocator& allocator,
                                              Args&&... args) {
   return PolymorphicToken{
-      *CreateToken<T>(allocator, std::forward<Args>(args)...)};
+      CreateToken<T>(allocator, std::forward<Args>(args)...)};
 }
 
 }  // namespace expression
