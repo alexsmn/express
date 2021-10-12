@@ -13,13 +13,13 @@ target_compile_definitions(express PRIVATE -DEXPRESS_IMPLEMENTATION)
 
 target_compile_features(express PUBLIC cxx_std_17)
 
-if(WIN32)
+if(MSVC)
   target_compile_options(express PRIVATE
     /permissive-
     /W4
     /wd4100 # unreferenced formal parameter
   )
-endif(WIN32)
+endif(MSVC)
 
 enable_testing()
 add_subdirectory(tests)
