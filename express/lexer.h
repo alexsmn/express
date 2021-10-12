@@ -11,7 +11,7 @@ class LexerDelegate;
 
 class EXPRESS_EXPORT Lexer {
  public:
-  typedef Lexem Lexem;
+  using Lexem = expression::Lexem;
 
   Lexer(const char* buf, LexerDelegate& delegate, int flags);
 

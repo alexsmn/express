@@ -61,7 +61,6 @@ class Value {
         break;
       default:
         _bad_type();
-        break;
     }
   }
 
@@ -70,7 +69,9 @@ class Value {
       delete[] string_.string;
   }
 
-  static void _bad_type() { throw std::runtime_error("bad type_"); }
+  [[noreturn]] static void _bad_type() {
+    throw std::runtime_error("bad type_");
+  }
 
   void swap(Value& value) {
     char buf[sizeof(Value)];
@@ -169,7 +170,6 @@ class Value {
         return strcmp(string_.string, right.string_.string) == 0;
       default:
         _bad_type();
-        return false;
     }
   }
 
@@ -187,7 +187,6 @@ class Value {
         return strcmp(string_.string, (const char*)right) < 0;
       default:
         _bad_type();
-        return false;
     }
   }
 
