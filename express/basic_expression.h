@@ -70,8 +70,8 @@ void BasicExpression<BasicToken>::Parse(const char* buf) {
   Lexer lexer{buf, lexer_delegate, 0};
   Allocator allocator;
   BasicParserDelegate<Lexer, BasicToken> parser_delegate;
-  BasicParser<Lexer, BasicToken, decltype(parser_delegate)> parser{
-      lexer, allocator, parser_delegate};
+  BasicParser<Lexer, decltype(parser_delegate)> parser{lexer, allocator,
+                                                       parser_delegate};
   Parse(parser, allocator);
 }
 
@@ -79,7 +79,7 @@ template <class BasicToken>
 template <class Parser>
 inline void BasicExpression<BasicToken>::Parse(Parser& parser,
                                                Allocator& allocator) {
-  std::optional<BasicToken> root_token = parser.Parse();
+  std::optional<BasicToken> root_token = parser.Parse<BasicToken>();
   if (!root_token.has_value())
     throw std::runtime_error("expression expected");
 

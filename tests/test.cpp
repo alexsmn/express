@@ -48,7 +48,7 @@ class TestParserDelegate {
   std::optional<PolymorphicToken> MakeCustomToken(
       Allocator& allocator,
       const Lexem& lexem,
-      BasicParser<Lexer, PolymorphicToken, TestParserDelegate>& parser) {
+      BasicParser<Lexer, TestParserDelegate>& parser) {
     if (lexem.lexem == LEX_NAME)
       return MakeVariableToken(allocator, lexem._string);
     return std::nullopt;
@@ -83,8 +83,8 @@ void Validate(Value expected_result,
   Lexer lexer{formula, lexer_delegate, 0};
   Allocator allocator;
   TestParserDelegate parser_delegate{std::move(variables)};
-  BasicParser<Lexer, PolymorphicToken, TestParserDelegate> parser{
-      lexer, allocator, parser_delegate};
+  BasicParser<Lexer, TestParserDelegate> parser{lexer, allocator,
+                                                parser_delegate};
   ex.Parse(parser, allocator);
   TestFormatterDelegate formatter_delegate;
   EXPECT_EQ(formula, ex.Format(formatter_delegate));
