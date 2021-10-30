@@ -79,7 +79,7 @@ template <class BasicToken>
 template <class Parser>
 inline void BasicExpression<BasicToken>::Parse(Parser& parser,
                                                Allocator& allocator) {
-  std::optional<BasicToken> root_token = parser.Parse<BasicToken>();
+  std::optional<BasicToken> root_token = parser.template Parse<BasicToken>();
   if (!root_token.has_value())
     throw std::runtime_error("expression expected");
 
