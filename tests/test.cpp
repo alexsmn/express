@@ -40,7 +40,7 @@ class TestVariableToken : public Token {
 
 using TestVariables = std::unordered_map<std::string_view, Value>;
 
-class TestParserDelegate {
+class TestParserDelegate : public BasicParserDelegate<PolymorphicToken> {
  public:
   explicit TestParserDelegate(TestVariables variables)
       : variables_{std::move(variables)} {}

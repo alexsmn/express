@@ -69,7 +69,7 @@ void BasicExpression<BasicToken>::Parse(const char* buf) {
   LexerDelegate lexer_delegate;
   Lexer lexer{buf, lexer_delegate, 0};
   Allocator allocator;
-  BasicParserDelegate<Lexer, BasicToken> parser_delegate;
+  BasicParserDelegate<BasicToken> parser_delegate;
   BasicParser<Lexer, decltype(parser_delegate)> parser{lexer, allocator,
                                                        parser_delegate};
   Parse(parser, allocator);
