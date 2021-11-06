@@ -1,6 +1,5 @@
 #pragma once
 
-#include "express/allocator.h"
 #include "express/parser_delegate.h"
 #include "express/standard_tokens.h"
 #include "express/token.h"
@@ -14,7 +13,7 @@ class BasicParser {
  public:
   using Lexem = typename BasicLexer::Lexem;
 
-  BasicParser(BasicLexer& lexer, Allocator& allocator, Delegate& delegate);
+  BasicParser(BasicLexer& lexer, Delegate& delegate);
 
   BasicParser(const BasicParser&) = delete;
   BasicParser& operator=(const BasicParser&) = delete;
@@ -36,7 +35,6 @@ class BasicParser {
 
  private:
   BasicLexer& lexer_;
-  Allocator& allocator_;
   Delegate& delegate_;
 
   Lexem next_lexem_{LEX_END};
@@ -44,9 +42,8 @@ class BasicParser {
 
 template <class BasicLexer, class Delegate>
 inline BasicParser<BasicLexer, Delegate>::BasicParser(BasicLexer& lexer,
-                                                      Allocator& allocator,
                                                       Delegate& delegate)
-    : lexer_{lexer}, allocator_{allocator}, delegate_{delegate} {}
+    : lexer_{lexer}, delegate_{delegate} {}
 
 template <class BasicLexer, class Delegate>
 template <class BasicToken>
@@ -57,8 +54,8 @@ inline BasicToken BasicParser<BasicLexer, Delegate>::MakePrimaryToken() {
   if (lexem.type & OPER_UNA) {
     assert(!(lexem.lexem & LEX_UNA));
     auto operand = MakePrimaryToken<BasicToken>();
-    return delegate_.MakeUnaryOperatorToken(
-        allocator_, static_cast<char>(lexem.lexem), std::move(operand));
+    return delegate_.MakeUnaryOperatorToken(static_cast<char>(lexem.lexem),
+                                            std::move(operand));
   }
 
   switch (lexem.lexem) {
@@ -68,21 +65,20 @@ inline BasicToken BasicParser<BasicLexer, Delegate>::MakePrimaryToken() {
       break;
 
     case LEX_DBL:
-      return delegate_.MakeDoubleToken(allocator_, lexem._double);
+      return delegate_.MakeDoubleToken(lexem._double);
     case LEX_STR:
-      return delegate_.MakeStringToken(allocator_, lexem._string);
+      return delegate_.MakeStringToken(lexem._string);
     case LEX_LP: {
       auto nested_token = MakeBinaryOperator<BasicToken>();
       if (next_lexem_.lexem != LEX_RP)
         throw std::runtime_error("missing ')'");
       ReadLexem();
-      return delegate_.MakeParenthesesToken(allocator_,
-                                            std::move(nested_token));
+      return delegate_.MakeParenthesesToken(std::move(nested_token));
     }
   }
 
   std::optional<BasicToken> custom_token =
-      delegate_.MakeCustomToken(allocator_, lexem, *this);
+      delegate_.MakeCustomToken(lexem, *this);
   if (custom_token.has_value())
     return std::move(*custom_token);
 
@@ -100,7 +96,7 @@ inline BasicToken BasicParser<BasicLexer, Delegate>::MakeBinaryOperator(
     ReadLexem();
     auto right = MakeBinaryOperator<BasicToken>(priority2 + 1);
     // Write operator
-    left = delegate_.MakeBinaryOperatorToken(allocator_, oper, std::move(left),
+    left = delegate_.MakeBinaryOperatorToken(oper, std::move(left),
                                              std::move(right));
   }
   return left;
@@ -143,7 +139,7 @@ inline BasicToken BasicParser<BasicLexer, Delegate>::MakeFunctionToken(
 
   ReadLexem();
 
-  return delegate_.MakeFunctionToken(allocator_, name, std::move(arguments));
+  return delegate_.MakeFunctionToken(name, std::move(arguments));
 }
 
 }  // namespace expression

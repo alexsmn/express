@@ -42,15 +42,15 @@ using TestVariables = std::unordered_map<std::string_view, Value>;
 
 class TestParserDelegate : public BasicParserDelegate<PolymorphicToken> {
  public:
-  explicit TestParserDelegate(TestVariables variables)
-      : variables_{std::move(variables)} {}
+  TestParserDelegate(Allocator& allocator, TestVariables variables)
+      : BasicParserDelegate<PolymorphicToken>{allocator},
+        variables_{std::move(variables)} {}
 
   std::optional<PolymorphicToken> MakeCustomToken(
-      Allocator& allocator,
       const Lexem& lexem,
       BasicParser<Lexer, TestParserDelegate>& parser) {
     if (lexem.lexem == LEX_NAME)
-      return MakeVariableToken(allocator, lexem._string);
+      return MakeVariableToken(lexem._string);
     return std::nullopt;
   }
 
@@ -60,14 +60,13 @@ class TestParserDelegate : public BasicParserDelegate<PolymorphicToken> {
   }
 
  private:
-  std::optional<PolymorphicToken> MakeVariableToken(Allocator& allocator,
-                                                    std::string_view name) {
+  std::optional<PolymorphicToken> MakeVariableToken(std::string_view name) {
     auto i = variables_.find(name);
     if (i == variables_.end())
       return std::nullopt;
 
     return expression::MakePolymorphicToken<TestVariableToken>(
-        allocator, i->first, i->second);
+        allocator_, i->first, i->second);
   }
 
   const TestVariables variables_;
@@ -82,9 +81,8 @@ void Validate(Value expected_result,
   LexerDelegate lexer_delegate;
   Lexer lexer{formula, lexer_delegate, 0};
   Allocator allocator;
-  TestParserDelegate parser_delegate{std::move(variables)};
-  BasicParser<Lexer, TestParserDelegate> parser{lexer, allocator,
-                                                parser_delegate};
+  TestParserDelegate parser_delegate{allocator, std::move(variables)};
+  BasicParser<Lexer, TestParserDelegate> parser{lexer, parser_delegate};
   ex.Parse(parser, allocator);
   TestFormatterDelegate formatter_delegate;
   EXPECT_EQ(formula, ex.Format(formatter_delegate));

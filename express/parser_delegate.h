@@ -14,41 +14,39 @@ class Allocator;
 template <class BasicToken>
 class BasicParserDelegate {
  public:
-  BasicToken MakeDoubleToken(Allocator& allocator, double value) {
-    return BasicToken{CreateToken<ValueToken<double>>(allocator, value)};
+  explicit BasicParserDelegate(Allocator& allocator) : allocator_{allocator} {}
+
+  BasicToken MakeDoubleToken(double value) {
+    return BasicToken{CreateToken<ValueToken<double>>(allocator_, value)};
   }
 
-  BasicToken MakeStringToken(Allocator& allocator, std::string_view str) {
-    return BasicToken{CreateToken<StringValueToken>(allocator, str, allocator)};
+  BasicToken MakeStringToken(std::string_view str) {
+    return BasicToken{
+        CreateToken<StringValueToken>(allocator_, str, allocator_)};
   }
 
   template <class OperandToken>
-  BasicToken MakeUnaryOperatorToken(Allocator& allocator,
-                                    char oper,
-                                    OperandToken&& operand_token) {
+  BasicToken MakeUnaryOperatorToken(char oper, OperandToken&& operand_token) {
     return BasicToken{CreateToken<BasicUnaryOperatorToken<OperandToken>>(
-        allocator, oper, std::forward<OperandToken>(operand_token))};
+        allocator_, oper, std::forward<OperandToken>(operand_token))};
   }
 
   template <class NestedToken>
-  BasicToken MakeParenthesesToken(Allocator& allocator,
-                                  NestedToken&& nested_token) {
+  BasicToken MakeParenthesesToken(NestedToken&& nested_token) {
     return BasicToken{CreateToken<ParenthesesToken<NestedToken>>(
-        allocator, std::forward<NestedToken>(nested_token))};
+        allocator_, std::forward<NestedToken>(nested_token))};
   }
 
   template <class LeftOperand, class RightOperand>
-  BasicToken MakeBinaryOperatorToken(Allocator& allocator,
-                                     char oper,
+  BasicToken MakeBinaryOperatorToken(char oper,
                                      LeftOperand&& left_operand,
                                      RightOperand&& right_operand) {
     return BasicToken{CreateToken<BasicBinaryOperatorToken<BasicToken>>(
-        allocator, oper, std::forward<LeftOperand>(left_operand),
+        allocator_, oper, std::forward<LeftOperand>(left_operand),
         std::forward<RightOperand>(right_operand))};
   }
 
-  BasicToken MakeFunctionToken(Allocator& allocator,
-                               std::string_view name,
+  BasicToken MakeFunctionToken(std::string_view name,
                                std::vector<BasicToken> arguments) {
     // function
     const auto* function = FindBasicFunction(name);
@@ -63,12 +61,11 @@ class BasicParserDelegate {
                                std::to_string(function->params)};
     }
 
-    return function->MakeToken(allocator, arguments.data(), arguments.size());
+    return function->MakeToken(allocator_, arguments.data(), arguments.size());
   }
 
   template <class Lexem, class Parser>
-  std::optional<BasicToken> MakeCustomToken(Allocator& allocator,
-                                            const Lexem& lexem,
+  std::optional<BasicToken> MakeCustomToken(const Lexem& lexem,
                                             Parser& parser) {
     return std::nullopt;
   }
@@ -76,6 +73,9 @@ class BasicParserDelegate {
   const BasicFunction<BasicToken>* FindBasicFunction(std::string_view name) {
     return functions::FindDefaultFunction<BasicToken>(name);
   }
+
+ protected:
+  Allocator& allocator_;
 };
 
 }  // namespace expression
