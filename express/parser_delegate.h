@@ -65,9 +65,8 @@ class BasicParserDelegate {
   }
 
   template <class Lexem, class Parser>
-  std::optional<BasicToken> MakeCustomToken(const Lexem& lexem,
-                                            Parser& parser) {
-    return std::nullopt;
+  BasicToken MakeCustomToken(const Lexem& lexem, Parser& parser) {
+    throw std::runtime_error{"unexpected token"};
   }
 
   const BasicFunction<BasicToken>* FindBasicFunction(std::string_view name) {

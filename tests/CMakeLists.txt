@@ -1,5 +1,5 @@
 if(NOT GTEST_FOUND)
-	find_package(GTest)
+  find_package(GTest)
 endif()
 
 if(GTEST_FOUND)

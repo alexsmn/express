@@ -46,12 +46,12 @@ class TestParserDelegate : public BasicParserDelegate<PolymorphicToken> {
       : BasicParserDelegate<PolymorphicToken>{allocator},
         variables_{std::move(variables)} {}
 
-  std::optional<PolymorphicToken> MakeCustomToken(
+  PolymorphicToken MakeCustomToken(
       const Lexem& lexem,
       BasicParser<Lexer, TestParserDelegate>& parser) {
     if (lexem.lexem == LEX_NAME)
       return MakeVariableToken(lexem._string);
-    return std::nullopt;
+    throw std::runtime_error{"Unexpected token"};
   }
 
   const BasicFunction<PolymorphicToken>* FindBasicFunction(
@@ -60,10 +60,10 @@ class TestParserDelegate : public BasicParserDelegate<PolymorphicToken> {
   }
 
  private:
-  std::optional<PolymorphicToken> MakeVariableToken(std::string_view name) {
+  PolymorphicToken MakeVariableToken(std::string_view name) {
     auto i = variables_.find(name);
     if (i == variables_.end())
-      return std::nullopt;
+      throw std::runtime_error{"Unknown variable name"};
 
     return expression::MakePolymorphicToken<TestVariableToken>(
         allocator_, i->first, i->second);

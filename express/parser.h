@@ -77,12 +77,7 @@ inline BasicToken BasicParser<BasicLexer, Delegate>::MakePrimaryToken() {
     }
   }
 
-  std::optional<BasicToken> custom_token =
-      delegate_.MakeCustomToken(lexem, *this);
-  if (custom_token.has_value())
-    return std::move(*custom_token);
-
-  throw std::runtime_error("unexpected primary token");
+  return delegate_.MakeCustomToken(lexem, *this);
 }
 
 template <class BasicLexer, class Delegate>
@@ -96,7 +91,8 @@ inline BasicToken BasicParser<BasicLexer, Delegate>::MakeBinaryOperator(
     ReadLexem();
     auto right = MakeBinaryOperator<BasicToken>(priority2 + 1);
     // Write operator
-    left = delegate_.MakeBinaryOperatorToken(oper, std::move(left),
+    auto old_left = std::move(left);
+    left = delegate_.MakeBinaryOperatorToken(oper, std::move(old_left),
                                              std::move(right));
   }
   return left;
