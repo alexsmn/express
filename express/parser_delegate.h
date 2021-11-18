@@ -4,7 +4,6 @@
 #include "express/standard_functions.h"
 #include "express/standard_tokens.h"
 
-#include <optional>
 #include <string_view>
 
 namespace expression {

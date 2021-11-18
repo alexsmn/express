@@ -4,8 +4,6 @@
 #include "express/standard_tokens.h"
 #include "express/token.h"
 
-#include <optional>
-
 namespace expression {
 
 template <class BasicLexer, class Delegate>
@@ -22,13 +20,13 @@ class BasicParser {
   BasicToken MakePrimaryToken();
 
   template <class BasicToken>
-  BasicToken MakeBinaryOperator(int priority = 0);
+  BasicToken MakeBinaryOperator(int priority);
 
   template <class BasicToken>
   BasicToken MakeFunctionToken(std::string_view name);
 
   template <class BasicToken>
-  std::optional<BasicToken> Parse();
+  BasicToken Parse();
 
   const Lexem& next_lexem() const { return next_lexem_; }
   void ReadLexem();
@@ -69,7 +67,7 @@ inline BasicToken BasicParser<BasicLexer, Delegate>::MakePrimaryToken() {
     case LEX_STR:
       return delegate_.MakeStringToken(lexem._string);
     case LEX_LP: {
-      auto nested_token = MakeBinaryOperator<BasicToken>();
+      auto nested_token = MakeBinaryOperator<BasicToken>(0);
       if (next_lexem_.lexem != LEX_RP)
         throw std::runtime_error("missing ')'");
       ReadLexem();
@@ -100,12 +98,12 @@ inline BasicToken BasicParser<BasicLexer, Delegate>::MakeBinaryOperator(
 
 template <class BasicLexer, class Delegate>
 template <class BasicToken>
-inline std::optional<BasicToken> BasicParser<BasicLexer, Delegate>::Parse() {
+inline BasicToken BasicParser<BasicLexer, Delegate>::Parse() {
   ReadLexem();
 
-  auto root_token = MakeBinaryOperator<BasicToken>();
+  auto root_token = MakeBinaryOperator<BasicToken>(0);
   if (next_lexem_.lexem != LEX_END)
-    return std::nullopt;
+    throw std::runtime_error{"End of expression is expected"};
 
   return root_token;
 }
@@ -124,7 +122,7 @@ inline BasicToken BasicParser<BasicLexer, Delegate>::MakeFunctionToken(
   ReadLexem();
   if (next_lexem_.lexem != LEX_RP) {
     for (;;) {
-      arguments.emplace_back(MakeBinaryOperator<BasicToken>());
+      arguments.emplace_back(MakeBinaryOperator<BasicToken>(0));
       if (next_lexem_.lexem != LEX_COMMA)
         break;
       ReadLexem();
