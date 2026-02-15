@@ -60,6 +60,10 @@ class BasicParserDelegate {
                                std::to_string(function->params)};
     }
 
+    if (function->params == -1 && arguments.empty()) {
+      throw std::runtime_error{"no parameters provided"};
+    }
+
     return function->MakeToken(allocator_, arguments.data(), arguments.size());
   }
 

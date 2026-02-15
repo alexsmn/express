@@ -128,6 +128,7 @@ class BasicVariadicFunction : public BasicFunction<BasicToken> {
   virtual BasicToken MakeToken(Allocator& allocator,
                                BasicToken* arguments,
                                size_t argument_count) const override {
+    assert(argument_count != 0);
     // TODO: Create binary token.
     Token* token = CreateToken<TokenImpl>(allocator, *this, arguments,
                                           argument_count, allocator);

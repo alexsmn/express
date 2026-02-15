@@ -18,6 +18,7 @@ if(MSVC)
     /permissive-
     /W4
     /wd4100 # unreferenced formal parameter
+    /wd4267 # conversion from 'size_t' to 'int', possible loss of data
   )
 endif(MSVC)
 
