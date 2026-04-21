@@ -36,17 +36,17 @@ Exit criteria:
 
 Commit: `Implement short-circuit And/Or evaluation`
 
-- [ ] In [express/standard_functions.h](/mnt/d/tc/third_party/express/express/standard_functions.h), replace generic variadic reduction for `And` and `Or` with dedicated token implementations.
-- [ ] Evaluate operands left-to-right and stop on the first decisive operand.
-- [ ] Preserve current truthiness semantics from `Value::operator bool()`.
-- [ ] Leave `Min` and `Max` on the generic variadic implementation in this phase.
-- [ ] In [tests/test.cpp](/mnt/d/tc/third_party/express/tests/test.cpp), add regression tests using custom tokens that throw on unexpected evaluation to prove short-circuiting.
-- [ ] In [benchmarks/benchmark.cpp](/mnt/d/tc/third_party/express/benchmarks/benchmark.cpp), add long boolean-chain benchmark cases.
+- [x] In [express/standard_functions.h](/mnt/d/tc/third_party/express/express/standard_functions.h), replace generic variadic reduction for `And` and `Or` with dedicated token implementations.
+- [x] Evaluate operands left-to-right and stop on the first decisive operand.
+- [x] Preserve current truthiness semantics from `Value::operator bool()`.
+- [x] Leave `Min` and `Max` on the generic variadic implementation in this phase.
+- [x] In [tests/test.cpp](/mnt/d/tc/third_party/express/tests/test.cpp), add regression tests using custom tokens that throw on unexpected evaluation to prove short-circuiting.
+- [x] In [benchmarks/benchmark.cpp](/mnt/d/tc/third_party/express/benchmarks/benchmark.cpp), add long boolean-chain benchmark cases.
 
 Exit criteria:
 
-- [ ] Boolean-chain eval benchmarks improve.
-- [ ] Tests prove both `And` and `Or` short-circuit correctly.
+- [x] Boolean-chain eval benchmarks improve.
+- [x] Tests prove both `And` and `Or` short-circuit correctly.
 
 ## Phase 4: Fold Variadic Functions into Binary Trees
 
@@ -108,7 +108,7 @@ Exit criteria:
 
 ## Recommended Gate Between Phases
 
-- [ ] Do not start Phase 4 until Phase 3 benchmarks confirm short-circuit improvements.
+- [x] Do not start Phase 4 until Phase 3 benchmarks confirm short-circuit improvements.
 - [ ] Do not start Phase 6 until Phase 5 benchmark gains are measured; otherwise it will be hard to attribute wins.
 - [ ] Refresh README benchmark numbers only after Phases 1, 3, 5, and 6, not after every phase.
 

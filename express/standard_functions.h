@@ -193,6 +193,74 @@ class BasicVariadicFunction : public BasicFunction<BasicToken> {
   };
 };
 
+template <class BasicToken, bool kShortCircuitValue>
+class BasicLogicalVariadicFunction : public BasicFunction<BasicToken> {
+ public:
+  explicit BasicLogicalVariadicFunction(std::string_view name)
+      : BasicFunction<BasicToken>{name, -1} {}
+
+  BasicToken MakeToken(Allocator& allocator,
+                       BasicToken* arguments,
+                       size_t argument_count) const override {
+    assert(argument_count != 0);
+    Token* token = CreateToken<TokenImpl>(allocator, *this, arguments,
+                                          argument_count, allocator);
+    return BasicToken{token};
+  }
+
+ private:
+  class TokenImpl : public Token {
+   public:
+    TokenImpl(const BasicLogicalVariadicFunction& fun,
+              BasicToken* arguments,
+              size_t argument_count,
+              Allocator& allocator)
+        : fun_{fun},
+          params_{static_cast<BasicToken*>(
+              allocator.allocate(argument_count * sizeof(BasicToken),
+                                 alignof(BasicToken)))},
+          count_{argument_count} {
+      for (size_t i = 0; i < count_; ++i)
+        new (params_ + i) BasicToken(arguments[i]);
+    }
+
+    Value Calculate(void* data) const override {
+      assert(count_ >= 1);
+      for (size_t i = 0; i < count_; ++i) {
+        const bool value = static_cast<bool>(params_[i].Calculate(data));
+        if (value == kShortCircuitValue)
+          return bool_to_value(kShortCircuitValue);
+      }
+      return bool_to_value(!kShortCircuitValue);
+    }
+
+    void Traverse(TraverseCallback callback, void* param) const override {
+      callback(this, param);
+      for (size_t i = 0; i < count_; ++i)
+        params_[i].Traverse(callback, param);
+    }
+
+    void Format(const FormatterDelegate& delegate,
+                std::string& str) const override {
+      str += fun_.name;
+      str += '(';
+      if (count_ != 0) {
+        params_[0].Format(delegate, str);
+        for (size_t i = 1; i < count_; ++i) {
+          str += ", ";
+          params_[i].Format(delegate, str);
+        }
+      }
+      str += ')';
+    }
+
+   private:
+    const BasicLogicalVariadicFunction& fun_;
+    BasicToken* params_;
+    const size_t count_;
+  };
+};
+
 template <class BasicToken>
 class BasicMathFunction1 : public BasicFunction<BasicToken> {
  public:
@@ -310,10 +378,8 @@ inline const F* FindFunction(const F** list, std::string_view name) {
 template <class BasicToken>
 inline const BasicFunction<BasicToken>* FindDefaultFunction(
     std::string_view name) {
-  static BasicVariadicFunction<BasicToken, std::logical_or<Value>>
-      logical_or_fun("Or");
-  static BasicVariadicFunction<BasicToken, std::logical_and<Value>>
-      logical_and_fun("And");
+  static BasicLogicalVariadicFunction<BasicToken, true> logical_or_fun("Or");
+  static BasicLogicalVariadicFunction<BasicToken, false> logical_and_fun("And");
   static BasicVariadicFunction<BasicToken, Min<Value>> min_fun("Min");
   static BasicVariadicFunction<BasicToken, Max<Value>> max_fun("Max");
   static BasicMathFunction1<BasicToken> abs_fun("Abs", abs_);

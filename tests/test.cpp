@@ -174,6 +174,64 @@ class Utf8ParserDelegate : public BasicParserDelegate<PolymorphicToken> {
   const Utf8Variables variables_;
 };
 
+struct LogicalOperandSpec {
+  Value value;
+  bool throws = false;
+  int* evaluation_count = nullptr;
+};
+
+using LogicalOperands = std::unordered_map<std::string_view, LogicalOperandSpec>;
+
+class LogicalOperandToken : public Token {
+ public:
+  LogicalOperandToken(std::string_view name, LogicalOperandSpec spec)
+      : name_{name}, spec_{std::move(spec)} {}
+
+  Value Calculate(void* data) const override {
+    if (spec_.evaluation_count)
+      ++*spec_.evaluation_count;
+    if (spec_.throws)
+      throw std::runtime_error{"Unexpected operand evaluation"};
+    return spec_.value;
+  }
+
+  void Traverse(TraverseCallback callback, void* param) const override {
+    callback(this, param);
+  }
+
+  void Format(const FormatterDelegate& delegate, std::string& str) const override {
+    str += name_;
+  }
+
+ private:
+  const std::string_view name_;
+  const LogicalOperandSpec spec_;
+};
+
+class LogicalParserDelegate : public BasicParserDelegate<PolymorphicToken> {
+ public:
+  LogicalParserDelegate(Allocator& allocator, LogicalOperands operands)
+      : BasicParserDelegate<PolymorphicToken>{allocator},
+        operands_{std::move(operands)} {}
+
+  PolymorphicToken MakeCustomToken(const Lexem& lexem,
+                                   BasicParser<Lexer, LogicalParserDelegate>&) {
+    if (lexem.lexem != LEX_NAME)
+      throw std::runtime_error{"Unexpected token"};
+
+    auto i = operands_.find(lexem._string);
+    if (i == operands_.end())
+      throw std::runtime_error{"Unknown operand"};
+
+    return expression::MakePolymorphicToken<LogicalOperandToken>(allocator_,
+                                                                 i->first,
+                                                                 i->second);
+  }
+
+ private:
+  const LogicalOperands operands_;
+};
+
 }  // namespace
 
 void Validate(Value expected_result,
@@ -189,6 +247,18 @@ void Validate(Value expected_result,
   TestFormatterDelegate formatter_delegate;
   EXPECT_EQ(formula, ex.Format(formatter_delegate));
   EXPECT_EQ(expected_result, ex.Calculate());
+}
+
+Value CalculateLogicalFormula(const char* formula,
+                             LogicalOperands operands = {}) {
+  Expression ex;
+  LexerDelegate lexer_delegate;
+  Lexer lexer{formula, lexer_delegate, 0};
+  Allocator allocator;
+  LogicalParserDelegate parser_delegate{allocator, std::move(operands)};
+  BasicParser<Lexer, LogicalParserDelegate> parser{lexer, parser_delegate};
+  ex.Parse(parser, allocator);
+  return ex.Calculate();
 }
 
 void ValidateUtf8(Value expected_result,
@@ -262,6 +332,52 @@ TEST(Value, SelfAssignmentPreservesStringContents) {
 TEST(Express, SupportsUtf8IdentifiersAndFunctionNames) {
   ValidateUtf8(5, "变量 + 2", {{"变量", 3}});
   ValidateUtf8(7, "Абс(знач)", {{"знач", -7}});
+}
+
+TEST(Express, OrShortCircuitsLeftToRight) {
+  int false_count = 0;
+  int true_count = 0;
+  int explode_count = 0;
+
+  EXPECT_NO_THROW({
+    EXPECT_EQ(Value(true), CalculateLogicalFormula(
+                               "Or(f, t, explode)",
+                               {{"f", {false, false, &false_count}},
+                                {"t", {true, false, &true_count}},
+                                {"explode", {false, true, &explode_count}}}));
+  });
+
+  EXPECT_EQ(1, false_count);
+  EXPECT_EQ(1, true_count);
+  EXPECT_EQ(0, explode_count);
+
+  EXPECT_THROW(CalculateLogicalFormula(
+                   "Or(f, explode)",
+                   {{"f", {false}}, {"explode", {false, true}}}),
+               std::runtime_error);
+}
+
+TEST(Express, AndShortCircuitsLeftToRight) {
+  int true_count = 0;
+  int false_count = 0;
+  int explode_count = 0;
+
+  EXPECT_NO_THROW({
+    EXPECT_EQ(Value(false), CalculateLogicalFormula(
+                                "And(t, f, explode)",
+                                {{"t", {true, false, &true_count}},
+                                 {"f", {false, false, &false_count}},
+                                 {"explode", {false, true, &explode_count}}}));
+  });
+
+  EXPECT_EQ(1, true_count);
+  EXPECT_EQ(1, false_count);
+  EXPECT_EQ(0, explode_count);
+
+  EXPECT_THROW(CalculateLogicalFormula(
+                   "And(t, explode)",
+                   {{"t", {true}}, {"explode", {false, true}}}),
+               std::runtime_error);
 }
 
 TEST(Expression, CustomExpression) {

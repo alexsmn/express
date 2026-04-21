@@ -74,6 +74,11 @@ struct BenchmarkCase {
   BenchmarkVariables variables;
 };
 
+struct BooleanChainBenchmarkCase {
+  const char* name;
+  const char* formula;
+};
+
 const BenchmarkCase& GetCase(int index) {
   static const BenchmarkCase kCases[] = {
       {"simple_arithmetic", "1 + 2 + 3 + 4 + 5", {}},
@@ -83,6 +88,17 @@ const BenchmarkCase& GetCase(int index) {
        {{"alpha", 11}, {"beta", 7}, {"gamma", 3}, {"delta", 20}, {"epsilon", 5}}},
       {"long_string", "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" + \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"",
        {}}};
+  return kCases[index];
+}
+
+const BooleanChainBenchmarkCase& GetBooleanChainCase(int index) {
+  static const BooleanChainBenchmarkCase kCases[] = {
+      {"or_first_true",
+       "Or(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
+       "0, 0, 0, 0, 0, 0, 0, 0, 0, 0)"},
+      {"and_first_false",
+       "And(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, "
+       "1, 1, 1, 1, 1, 1, 1, 1, 1, 1)"}};
   return kCases[index];
 }
 
@@ -166,6 +182,19 @@ void BM_Format(benchmark::State& state) {
   state.SetLabel(benchmark_case.name);
 }
 
+void BM_BooleanChainEvaluate(benchmark::State& state) {
+  const auto& benchmark_case =
+      GetBooleanChainCase(static_cast<int>(state.range(0)));
+  Expression expression;
+  expression.Parse(benchmark_case.formula);
+  for (auto _ : state) {
+    auto value = expression.Calculate();
+    benchmark::DoNotOptimize(value);
+    benchmark::ClobberMemory();
+  }
+  state.SetLabel(benchmark_case.name);
+}
+
 bool CountTokens(const Token* token, void* param) {
   auto& token_count = *static_cast<int*>(param);
   ++token_count;
@@ -213,6 +242,7 @@ BENCHMARK(BM_ParseReserved)->DenseRange(0, 4);
 BENCHMARK(BM_Evaluate)->DenseRange(0, 4);
 BENCHMARK(BM_RepeatedEvaluate)->DenseRange(0, 4);
 BENCHMARK(BM_Format)->DenseRange(0, 4);
+BENCHMARK(BM_BooleanChainEvaluate)->DenseRange(0, 1);
 BENCHMARK(BM_Traverse)->DenseRange(0, 4);
 BENCHMARK(BM_ParseAndEvaluate)->DenseRange(0, 4);
 BENCHMARK(BM_ParseAndEvaluateReserved)->DenseRange(0, 4);
