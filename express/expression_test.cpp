@@ -4,23 +4,18 @@
 #include "express/lexer_delegate.h"
 #include "express/parser.h"
 #include "express/parser_delegate.h"
-#include "express/strings.h"
 
-#include <array>
-#include <cstdint>
-#include <cstring>
+#include <cmath>
 #include <gtest/gtest.h>
 #include <string>
-#include <type_traits>
 #include <unordered_map>
 
 namespace expression {
-
 namespace {
 
 class TestFormatterDelegate : public FormatterDelegate {
  public:
-  virtual void AppendDouble(std::string& str, double value) const override {
+  void AppendDouble(std::string& str, double value) const override {
     str.append(std::to_string(static_cast<int>(value)));
   }
 };
@@ -30,12 +25,12 @@ class TestVariableToken : public Token {
   TestVariableToken(std::string_view name, const Value& value)
       : name_{name}, value_{value} {}
 
-  virtual Value Calculate(void* data) const override { return value_; }
+  Value Calculate(void* data) const override { return value_; }
 
-  virtual void Traverse(TraverseCallback callb, void* param) const {}
+  void Traverse(TraverseCallback callb, void* param) const override {}
 
-  virtual void Format(const FormatterDelegate& delegate,
-                      std::string& str) const override {
+  void Format(const FormatterDelegate& delegate,
+              std::string& str) const override {
     str += name_;
   }
 
@@ -80,7 +75,7 @@ class TestParserDelegate : public BasicParserDelegate<PolymorphicToken> {
 
 class Utf8LexerDelegate : public LexerDelegate {
  public:
-  virtual std::optional<Lexem> ReadLexem(ReadBuffer& buffer) override {
+  std::optional<Lexem> ReadLexem(ReadBuffer& buffer) override {
     const unsigned char* current =
         reinterpret_cast<const unsigned char*>(buffer.buf);
     if (!IsUtf8IdentifierByte(*current))
@@ -232,8 +227,6 @@ class LogicalParserDelegate : public BasicParserDelegate<PolymorphicToken> {
   const LogicalOperands operands_;
 };
 
-}  // namespace
-
 void Validate(Value expected_result,
               const char* formula,
               TestVariables variables = {}) {
@@ -276,7 +269,31 @@ void ValidateUtf8(Value expected_result,
   EXPECT_EQ(expected_result, ex.Calculate());
 }
 
-TEST(Express, Test) {
+bool TokenCountCallback(const Token* token, void* param) {
+  auto& token_count = *static_cast<int*>(param);
+  ++token_count;
+  return true;
+}
+
+int GetTokenCount(const char* formula) {
+  Expression e;
+  e.Parse(formula);
+  int token_count = 0;
+  e.Traverse(&TokenCountCallback, &token_count);
+  return token_count;
+}
+
+void ParseGenericExpression(const char* formula, Expression& ex) {
+  LexerDelegate lexer_delegate;
+  Lexer lexer{formula, lexer_delegate, 0};
+  Allocator allocator;
+  BasicParserDelegate<PolymorphicToken> parser_delegate{allocator};
+  BasicParser<Lexer, BasicParserDelegate<PolymorphicToken>> parser{
+      lexer, parser_delegate};
+  ex.Parse(parser, allocator);
+}
+
+TEST(Expression, ParsesAndEvaluatesBuiltins) {
   Validate(2, "5 - 3");
   Validate(3, "6 - 2 - 1");
   Validate(7, "9 - 4 + 2");
@@ -294,147 +311,22 @@ TEST(Express, Test) {
   Validate(true, "Or(c, And(a, b))", {{"a", true}, {"b", true}, {"c", false}});
 }
 
-bool TokenCountCallback(const Token* token, void* param) {
-  auto& token_count = *static_cast<int*>(param);
-  ++token_count;
-  return true;
-}
-
-int GetTokenCount(const char* formula) {
-  Expression e;
-  e.Parse(formula);
-  int token_count = 0;
-  e.Traverse(&TokenCountCallback, &token_count);
-  return token_count;
-}
-
-TEST(Express, Traverse) {
+TEST(Expression, Traverse) {
   EXPECT_EQ(9, GetTokenCount("1 + 2 + 3 + 4 + 5"));
 }
 
-TEST(Express, NegativeNumbersRemainTruthy) {
+TEST(Expression, NegativeNumbersRemainTruthy) {
   Validate(1, "If(-1, 1, 2)");
   Validate(false, "Not(-1)");
   Validate(true, "Or(-1, 0)");
 }
 
-TEST(Value, SelfAssignmentPreservesStringContents) {
-  const std::string expected(1024, '#');
-  Value value{expected};
-
-  Value& alias = value;
-  value = alias;
-
-  EXPECT_TRUE(value.is_string());
-  EXPECT_EQ(expected, std::string(static_cast<const char*>(value)));
-}
-
-TEST(Value, PreservesShortAndLongStringLiterals) {
-  const std::string short_string(Value::kInlineStringCapacity, '#');
-  const std::string long_string(Value::kInlineStringCapacity + 5, '$');
-
-  Value short_value{short_string};
-  Value long_value{long_string};
-
-  EXPECT_EQ(short_string, std::string(static_cast<const char*>(short_value)));
-  EXPECT_EQ(long_string, std::string(static_cast<const char*>(long_value)));
-}
-
-TEST(Value, ConcatenatesAcrossInlineStorageBoundary) {
-  const std::string short_left(Value::kInlineStringCapacity / 2, 'a');
-  const std::string short_right(Value::kInlineStringCapacity / 2, 'b');
-  const std::string long_tail(Value::kInlineStringCapacity, 'c');
-
-  Value short_concat{short_left};
-  short_concat += Value{short_right};
-  EXPECT_EQ(short_left + short_right,
-            std::string(static_cast<const char*>(short_concat)));
-
-  Value mixed_concat{short_left};
-  mixed_concat += Value{long_tail};
-  EXPECT_EQ(short_left + long_tail,
-            std::string(static_cast<const char*>(mixed_concat)));
-}
-
-TEST(Value, StringEqualityAndOrderingRemainStable) {
-  Value alpha{"alpha"};
-  Value alpha_copy{"alpha"};
-  Value alphabet{"alphabet"};
-  Value beta{"beta"};
-
-  EXPECT_EQ(alpha, alpha_copy);
-  EXPECT_NE(alpha, beta);
-  EXPECT_LT(alpha, alphabet);
-  EXPECT_LT(alphabet, beta);
-}
-
-TEST(Value, SelfAssignmentWorksAcrossInlineAndHeapThresholds) {
-  Value inline_value{std::string(Value::kInlineStringCapacity, 'i')};
-  Value heap_value{std::string(Value::kInlineStringCapacity + 8, 'h')};
-
-  Value& inline_alias = inline_value;
-  inline_value = inline_alias;
-  EXPECT_EQ(std::string(Value::kInlineStringCapacity, 'i'),
-            std::string(static_cast<const char*>(inline_value)));
-
-  Value& heap_alias = heap_value;
-  heap_value = heap_alias;
-  EXPECT_EQ(std::string(Value::kInlineStringCapacity + 8, 'h'),
-            std::string(static_cast<const char*>(heap_value)));
-}
-
-TEST(Value, MoveConstructionPreservesShortAndLongStrings) {
-  const std::string short_string(Value::kInlineStringCapacity, 's');
-  const std::string long_string(Value::kInlineStringCapacity + 9, 'l');
-
-  Value moved_short{Value{short_string}};
-  Value moved_long{Value{long_string}};
-
-  EXPECT_EQ(short_string, std::string(static_cast<const char*>(moved_short)));
-  EXPECT_EQ(long_string, std::string(static_cast<const char*>(moved_long)));
-}
-
-TEST(Value, MoveAssignmentPreservesStringsAndLeavesSourceReusable) {
-  const std::string short_string(Value::kInlineStringCapacity - 1, 'a');
-  const std::string long_string(Value::kInlineStringCapacity + 11, 'b');
-
-  Value target{"seed"};
-  Value source{long_string};
-  target = std::move(source);
-
-  EXPECT_EQ(long_string, std::string(static_cast<const char*>(target)));
-
-  source = short_string.c_str();
-  EXPECT_EQ(short_string, std::string(static_cast<const char*>(source)));
-
-  Value short_target{123};
-  Value short_source{short_string};
-  short_target = std::move(short_source);
-
-  EXPECT_EQ(short_string, std::string(static_cast<const char*>(short_target)));
-
-  short_source = long_string.c_str();
-  EXPECT_EQ(long_string, std::string(static_cast<const char*>(short_source)));
-}
-
-TEST(Value, SwapPreservesInlineAndHeapStrings) {
-  const std::string inline_string(Value::kInlineStringCapacity, 'x');
-  const std::string heap_string(Value::kInlineStringCapacity + 7, 'y');
-
-  Value left{inline_string};
-  Value right{heap_string};
-  left.swap(right);
-
-  EXPECT_EQ(heap_string, std::string(static_cast<const char*>(left)));
-  EXPECT_EQ(inline_string, std::string(static_cast<const char*>(right)));
-}
-
-TEST(Express, SupportsUtf8IdentifiersAndFunctionNames) {
+TEST(Expression, SupportsUtf8IdentifiersAndFunctionNames) {
   ValidateUtf8(5, "变量 + 2", {{"变量", 3}});
   ValidateUtf8(7, "Абс(знач)", {{"знач", -7}});
 }
 
-TEST(Express, DefaultParseHandlesStringLiteralsAndConcatenation) {
+TEST(Expression, DefaultParseHandlesStringLiteralsAndConcatenation) {
   const std::string literal(Value::kInlineStringCapacity + 12, '#');
   const std::string formula = "\"" + literal + "\" + \"!\"";
 
@@ -443,24 +335,25 @@ TEST(Express, DefaultParseHandlesStringLiteralsAndConcatenation) {
 
   TestFormatterDelegate formatter_delegate;
   EXPECT_EQ(formula, expression.Format(formatter_delegate));
-  EXPECT_EQ(literal + "!", std::string(static_cast<const char*>(expression.Calculate())));
+  EXPECT_EQ(literal + "!",
+            std::string(static_cast<const char*>(expression.Calculate())));
 }
 
-TEST(Express, FoldedVariadicFunctionsPreserveFormatAndValue) {
+TEST(Expression, FoldedVariadicFunctionsPreserveFormatAndValue) {
   Validate(3, "Min(5, 4, 6, 8, 3, 10)");
   Validate(9, "Max(5, 4, 6, 8, 3, 9)");
   Validate(true, "Or(0, 0, 1, 0)");
   Validate(false, "And(1, 1, 0, 1)");
 }
 
-TEST(Express, FoldedVariadicSingleArgumentFunctionsRemainStable) {
+TEST(Expression, FoldedVariadicSingleArgumentFunctionsRemainStable) {
   Validate(5, "Min(5)");
   Validate(5, "Max(5)");
   Validate(true, "Or(1)");
   Validate(false, "And(0)");
 }
 
-TEST(Express, OrShortCircuitsLeftToRight) {
+TEST(Expression, OrShortCircuitsLeftToRight) {
   int false_count = 0;
   int true_count = 0;
   int explode_count = 0;
@@ -483,7 +376,7 @@ TEST(Express, OrShortCircuitsLeftToRight) {
       std::runtime_error);
 }
 
-TEST(Express, AndShortCircuitsLeftToRight) {
+TEST(Expression, AndShortCircuitsLeftToRight) {
   int true_count = 0;
   int false_count = 0;
   int explode_count = 0;
@@ -506,129 +399,42 @@ TEST(Express, AndShortCircuitsLeftToRight) {
       std::runtime_error);
 }
 
-TEST(Express, FoldedVariadicFunctionsChangeTraversalShape) {
+TEST(Expression, FoldedVariadicFunctionsChangeTraversalShape) {
   EXPECT_EQ(5, GetTokenCount("Min(5, 6, 4)"));
   EXPECT_EQ(7, GetTokenCount("Or(0, 0, 1, 0)"));
 }
 
-TEST(Expression, CustomExpression) {
-  static_assert(kIsArenaToken<PolymorphicToken>);
-  static_assert(!kIsArenaToken<std::string>);
-
-  struct CustomToken {
-    explicit CustomToken(int i)
-        : payload{static_cast<std::uintptr_t>(i)}, holds_value{true} {}
-    explicit CustomToken(const Token* token)
-        : payload{reinterpret_cast<std::uintptr_t>(token)},
-          holds_value{false} {}
-
-    double Calculate(void* data) const {
-      if (holds_value)
-        return static_cast<double>(payload);
-      return reinterpret_cast<const Token*>(payload)->Calculate(data);
-    }
-
-    void Format(const FormatterDelegate& delegate, std::string& str) const {}
-
-    void Traverse(TraverseCallback callback, void* param) const {}
-
-    std::uintptr_t payload;
-    bool holds_value;
+TEST(Expression, DefaultAndGenericPathsProduceSameResults) {
+  const char* formulas[] = {
+      "1 + 2 * 3",
+      "\"Hello\" + \" \" + \"World\"",
+      "If(2 - 1 - 1, 4 + 2, 3 * 3)",
+      "Min(5, 4, 6, 8, 3, 10)",
+      "Or(0, 0, 1, 0)",
+      "(10 - (5 + 3)) * 3",
   };
-
-  static_assert(kIsArenaToken<CustomToken>);
-  AssertArenaToken<PolymorphicToken>();
-  AssertArenaToken<CustomToken>();
-
-  BasicExpression<CustomToken> e;
-  e.Parse("5 + 6");
-  EXPECT_EQ(11, e.Calculate(nullptr));
-
-  BasicExpression<CustomToken> variadic_expression;
-  variadic_expression.Parse("Min(5, 6, 4)");
-  EXPECT_EQ(4, variadic_expression.Calculate(nullptr));
-}
-
-TEST(Allocator, AlignsAllocationsForOveralignedTypes) {
-  struct alignas(64) AlignedStorage {
-    std::array<char, 64> data;
-  };
-
-  Allocator allocator;
-  void* first =
-      allocator.allocate(sizeof(AlignedStorage), alignof(AlignedStorage));
-  void* second =
-      allocator.allocate(sizeof(AlignedStorage), alignof(AlignedStorage));
-
-  EXPECT_EQ(0u,
-            reinterpret_cast<std::uintptr_t>(first) % alignof(AlignedStorage));
-  EXPECT_EQ(0u,
-            reinterpret_cast<std::uintptr_t>(second) % alignof(AlignedStorage));
-}
-
-TEST(Allocator, ReserveBytesRespectsAlignmentForSubsequentAllocations) {
-  struct alignas(128) WideAlignedStorage {
-    std::array<char, 128> data;
-  };
-
-  Allocator allocator;
-  allocator.reserve_bytes(512, alignof(WideAlignedStorage));
-
-  void* first = allocator.allocate(sizeof(WideAlignedStorage),
-                                   alignof(WideAlignedStorage));
-  void* second = allocator.allocate(sizeof(WideAlignedStorage),
-                                    alignof(WideAlignedStorage));
-
-  EXPECT_EQ(0u, reinterpret_cast<std::uintptr_t>(first) %
-                    alignof(WideAlignedStorage));
-  EXPECT_EQ(0u, reinterpret_cast<std::uintptr_t>(second) %
-                    alignof(WideAlignedStorage));
-}
-
-TEST(Allocator, ReserveBytesCanUpgradeAlignmentAfterExistingAllocations) {
-  struct alignas(128) WideAlignedStorage {
-    std::array<char, 128> data;
-  };
-
-  Allocator allocator;
-  allocator.allocate(1);
-  allocator.reserve_bytes(512, alignof(WideAlignedStorage));
-
-  void* ptr = allocator.allocate(sizeof(WideAlignedStorage),
-                                 alignof(WideAlignedStorage));
-
-  EXPECT_EQ(
-      0u, reinterpret_cast<std::uintptr_t>(ptr) % alignof(WideAlignedStorage));
-}
-
-TEST(Allocator, ReserveDoesNotChangeParseBehavior) {
-  constexpr const char* kFormula = "If(8 - 3, Min(5, 9, 4), 1 + 2)";
-
-  Expression reserved_expression;
-  {
-    LexerDelegate lexer_delegate;
-    Lexer lexer{kFormula, lexer_delegate, 0};
-    Allocator allocator;
-    allocator.reserve_bytes(256);
-    BasicParserDelegate<PolymorphicToken> parser_delegate{allocator};
-    BasicParser<Lexer, BasicParserDelegate<PolymorphicToken>> parser{
-        lexer, parser_delegate};
-    reserved_expression.Parse(parser, allocator);
-  }
-
-  Expression default_expression;
-  default_expression.Parse(kFormula);
 
   TestFormatterDelegate formatter_delegate;
-  EXPECT_EQ(default_expression.Format(formatter_delegate),
-            reserved_expression.Format(formatter_delegate));
-  EXPECT_EQ(default_expression.Calculate(), reserved_expression.Calculate());
+  for (const char* formula : formulas) {
+    Expression default_expression;
+    default_expression.Parse(formula);
+
+    Expression generic_expression;
+    ParseGenericExpression(formula, generic_expression);
+
+    EXPECT_EQ(default_expression.Format(formatter_delegate),
+              generic_expression.Format(formatter_delegate));
+    EXPECT_EQ(default_expression.Calculate(), generic_expression.Calculate());
+
+    int default_token_count = 0;
+    default_expression.Traverse(&TokenCountCallback, &default_token_count);
+
+    int generic_token_count = 0;
+    generic_expression.Traverse(&TokenCountCallback, &generic_token_count);
+
+    EXPECT_EQ(generic_token_count, default_token_count);
+  }
 }
 
-TEST(Strings, EqualsNoCaseHandlesHighBitBytes) {
-  const std::string a("\xC4", 1);
-  const std::string b("\xC4", 1);
-  EXPECT_TRUE(EqualsNoCase(a, b));
-}
-
+}  // namespace
 }  // namespace expression

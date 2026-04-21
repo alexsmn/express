@@ -4,6 +4,7 @@ file(GLOB express_sources CONFIGURE_DEPENDS
   "express/*.cpp"
   "express/*.h"
 )
+list(FILTER express_sources EXCLUDE REGEX ".*_test\\.cpp$")
 
 add_library(express ${express_sources})
 

@@ -5,6 +5,7 @@
 #include "express/lexer.h"
 #include "express/lexer_delegate.h"
 #include "express/parser.h"
+#include "express/parser_delegate.h"
 
 #include <optional>
 #include <stdexcept>

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "express/arena_token.h"
-#include "express/express.h"
 #include "express/function.h"
 #include "express/strings.h"
 

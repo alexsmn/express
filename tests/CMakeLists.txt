@@ -3,7 +3,11 @@ if(NOT GTEST_FOUND)
 endif()
 
 if(GTEST_FOUND)
-  add_executable(express_unittest "test.cpp")
+  file(GLOB express_test_sources CONFIGURE_DEPENDS
+    "../express/*_test.cpp"
+  )
+
+  add_executable(express_unittest ${express_test_sources})
   target_link_libraries(express_unittest PUBLIC express GTest::gtest_main)
 
   include(GoogleTest)
