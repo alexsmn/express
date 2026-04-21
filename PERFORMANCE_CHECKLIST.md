@@ -52,18 +52,18 @@ Exit criteria:
 
 Commit: `Fold standard variadic functions into binary parse trees`
 
-- [ ] In [express/parser_delegate.h](/mnt/d/tc/third_party/express/express/parser_delegate.h), add support for building folded binary forms for standard variadic functions.
-- [ ] In [express/standard_functions.h](/mnt/d/tc/third_party/express/express/standard_functions.h), implement binary folding for `Min`, `Max`, `And`, and `Or`.
-- [ ] Preserve left-to-right associativity and existing formatting output.
-- [ ] Keep the generic variadic implementation available for future custom functions.
-- [ ] In [tests/test.cpp](/mnt/d/tc/third_party/express/tests/test.cpp), add coverage proving evaluation and formatting remain unchanged after folding.
-- [ ] Add optional traversal/token-shape assertions if useful.
-- [ ] Rebaseline parse, evaluate, and traverse benchmarks for the folded functions.
+- [x] In [express/parser_delegate.h](/mnt/d/tc/third_party/express/express/parser_delegate.h), add support for building folded binary forms for standard variadic functions.
+- [x] In [express/standard_functions.h](/mnt/d/tc/third_party/express/express/standard_functions.h), implement binary folding for `Min`, `Max`, `And`, and `Or`.
+- [x] Preserve left-to-right associativity and existing formatting output.
+- [x] Keep the generic variadic implementation available for future custom functions.
+- [x] In [tests/test.cpp](/mnt/d/tc/third_party/express/tests/test.cpp), add coverage proving evaluation and formatting remain unchanged after folding.
+- [x] Add optional traversal/token-shape assertions if useful.
+- [x] Rebaseline parse, evaluate, and traverse benchmarks for the folded functions.
 
 Exit criteria:
 
-- [ ] Standard variadic functions no longer depend on array-backed hot-path storage.
-- [ ] Benchmarks show improvement or at minimum reduced memory overhead.
+- [x] Standard variadic functions no longer depend on array-backed hot-path storage.
+- [x] Benchmarks show improvement or at minimum reduced memory overhead.
 
 ## Phase 5: Reduce String Allocation Cost in `Value`
 

@@ -8,6 +8,9 @@
 #include <algorithm>
 #include <cstring>
 #include <functional>
+#include <type_traits>
+#include <utility>
+#include <vector>
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -193,72 +196,158 @@ class BasicVariadicFunction : public BasicFunction<BasicToken> {
   };
 };
 
-template <class BasicToken, bool kShortCircuitValue>
-class BasicLogicalVariadicFunction : public BasicFunction<BasicToken> {
+template <class BasicToken, class = void>
+struct HasTokenAccessor : std::false_type {};
+
+template <class BasicToken>
+struct HasTokenAccessor<
+    BasicToken,
+    std::void_t<decltype(std::declval<const BasicToken&>().token())>>
+    : std::true_type {};
+
+template <class BasicToken,
+          class T,
+          bool kShortCircuit = false,
+          bool kShortCircuitValue = false>
+class BasicBinaryFoldFunction : public BasicFunction<BasicToken> {
  public:
-  explicit BasicLogicalVariadicFunction(std::string_view name)
+  explicit BasicBinaryFoldFunction(std::string_view name)
       : BasicFunction<BasicToken>{name, -1} {}
 
   BasicToken MakeToken(Allocator& allocator,
                        BasicToken* arguments,
                        size_t argument_count) const override {
     assert(argument_count != 0);
-    Token* token = CreateToken<TokenImpl>(allocator, *this, arguments,
-                                          argument_count, allocator);
-    return BasicToken{token};
+    std::vector<BasicToken> folded_arguments;
+    folded_arguments.reserve(argument_count);
+    for (size_t i = 0; i < argument_count; ++i)
+      folded_arguments.emplace_back(std::move(arguments[i]));
+    return MakeFoldedToken(allocator, std::move(folded_arguments));
+  }
+
+  bool SupportsFoldedArguments() const override { return true; }
+
+  BasicToken MakeFoldedToken(Allocator& allocator,
+                             std::vector<BasicToken> arguments) const override {
+    assert(!arguments.empty());
+    if (arguments.size() == 1)
+      return MakeUnaryToken(allocator, std::move(arguments.front()));
+
+    if constexpr (kShortCircuit) {
+      BasicToken folded = MakeBinaryToken(
+          allocator, std::move(arguments[arguments.size() - 2]),
+          std::move(arguments[arguments.size() - 1]));
+      for (size_t i = arguments.size() - 2; i-- > 0;) {
+        folded = MakeBinaryToken(allocator, std::move(arguments[i]),
+                                 std::move(folded));
+      }
+      return folded;
+    }
+
+    BasicToken folded =
+        MakeBinaryToken(allocator, std::move(arguments[0]), std::move(arguments[1]));
+    for (size_t i = 2; i < arguments.size(); ++i) {
+      folded = MakeBinaryToken(allocator, std::move(folded),
+                               std::move(arguments[i]));
+    }
+    return folded;
   }
 
  private:
-  class TokenImpl : public Token {
+  class UnaryTokenImpl : public Token {
    public:
-    TokenImpl(const BasicLogicalVariadicFunction& fun,
-              BasicToken* arguments,
-              size_t argument_count,
-              Allocator& allocator)
-        : fun_{fun},
-          params_{static_cast<BasicToken*>(
-              allocator.allocate(argument_count * sizeof(BasicToken),
-                                 alignof(BasicToken)))},
-          count_{argument_count} {
-      for (size_t i = 0; i < count_; ++i)
-        new (params_ + i) BasicToken(arguments[i]);
-    }
+    UnaryTokenImpl(const BasicBinaryFoldFunction& fun, BasicToken&& argument)
+        : fun_{fun}, argument_{std::move(argument)} {}
 
-    Value Calculate(void* data) const override {
-      assert(count_ >= 1);
-      for (size_t i = 0; i < count_; ++i) {
-        const bool value = static_cast<bool>(params_[i].Calculate(data));
-        if (value == kShortCircuitValue)
-          return bool_to_value(kShortCircuitValue);
-      }
-      return bool_to_value(!kShortCircuitValue);
-    }
+    Value Calculate(void* data) const override { return argument_.Calculate(data); }
 
     void Traverse(TraverseCallback callback, void* param) const override {
       callback(this, param);
-      for (size_t i = 0; i < count_; ++i)
-        params_[i].Traverse(callback, param);
+      argument_.Traverse(callback, param);
     }
 
     void Format(const FormatterDelegate& delegate,
                 std::string& str) const override {
       str += fun_.name;
       str += '(';
-      if (count_ != 0) {
-        params_[0].Format(delegate, str);
-        for (size_t i = 1; i < count_; ++i) {
-          str += ", ";
-          params_[i].Format(delegate, str);
-        }
-      }
+      argument_.Format(delegate, str);
       str += ')';
     }
 
    private:
-    const BasicLogicalVariadicFunction& fun_;
-    BasicToken* params_;
-    const size_t count_;
+    const BasicBinaryFoldFunction& fun_;
+    const BasicToken argument_;
   };
+
+  class TokenImpl : public Token {
+   public:
+    friend class BasicBinaryFoldFunction;
+
+    TokenImpl(const BasicBinaryFoldFunction& fun,
+              BasicToken&& left,
+              BasicToken&& right)
+        : fun_{fun}, left_{std::move(left)}, right_{std::move(right)} {}
+
+    Value Calculate(void* data) const override {
+      auto left = left_.Calculate(data);
+      if constexpr (kShortCircuit) {
+        if (static_cast<bool>(left) == kShortCircuitValue)
+          return bool_to_value(kShortCircuitValue);
+      }
+      auto right = right_.Calculate(data);
+      return T{}(left, right);
+    }
+
+    void Traverse(TraverseCallback callback, void* param) const override {
+      callback(this, param);
+      left_.Traverse(callback, param);
+      right_.Traverse(callback, param);
+    }
+
+    void Format(const FormatterDelegate& delegate,
+                std::string& str) const override {
+      str += fun_.name;
+      str += '(';
+      fun_.AppendArguments(delegate, str, left_);
+      str += ", ";
+      fun_.AppendArguments(delegate, str, right_);
+      str += ')';
+    }
+
+   private:
+    const BasicBinaryFoldFunction& fun_;
+    const BasicToken left_;
+    const BasicToken right_;
+  };
+
+  BasicToken MakeBinaryToken(Allocator& allocator,
+                             BasicToken&& left,
+                             BasicToken&& right) const {
+    return BasicToken{
+        CreateToken<TokenImpl>(allocator, *this, std::move(left), std::move(right))};
+  }
+
+  BasicToken MakeUnaryToken(Allocator& allocator, BasicToken&& argument) const {
+    return BasicToken{
+        CreateToken<UnaryTokenImpl>(allocator, *this, std::move(argument))};
+  }
+
+  void AppendArguments(const FormatterDelegate& delegate,
+                       std::string& str,
+                       const BasicToken& token) const {
+    if constexpr (HasTokenAccessor<BasicToken>::value) {
+      const Token* nested_token = token.token();
+      const auto* nested = dynamic_cast<const TokenImpl*>(nested_token);
+      if (nested && &nested->fun_ == this) {
+        AppendArguments(delegate, str, nested->left_);
+        str += ", ";
+        AppendArguments(delegate, str, nested->right_);
+        return;
+      }
+    }
+
+    token.Format(delegate, str);
+  }
 };
 
 template <class BasicToken>
@@ -378,10 +467,18 @@ inline const F* FindFunction(const F** list, std::string_view name) {
 template <class BasicToken>
 inline const BasicFunction<BasicToken>* FindDefaultFunction(
     std::string_view name) {
-  static BasicLogicalVariadicFunction<BasicToken, true> logical_or_fun("Or");
-  static BasicLogicalVariadicFunction<BasicToken, false> logical_and_fun("And");
-  static BasicVariadicFunction<BasicToken, Min<Value>> min_fun("Min");
-  static BasicVariadicFunction<BasicToken, Max<Value>> max_fun("Max");
+  static BasicBinaryFoldFunction<BasicToken,
+                                 std::logical_or<Value>,
+                                 true,
+                                 true>
+      logical_or_fun("Or");
+  static BasicBinaryFoldFunction<BasicToken,
+                                 std::logical_and<Value>,
+                                 true,
+                                 false>
+      logical_and_fun("And");
+  static BasicBinaryFoldFunction<BasicToken, Min<Value>> min_fun("Min");
+  static BasicBinaryFoldFunction<BasicToken, Max<Value>> max_fun("Max");
   static BasicMathFunction1<BasicToken> abs_fun("Abs", abs_);
   static BasicMathFunction1<BasicToken> not_fun("Not", not_);
   static BasicMathFunction1<BasicToken> sign_fun("Sign", sign);

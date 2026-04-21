@@ -334,6 +334,20 @@ TEST(Express, SupportsUtf8IdentifiersAndFunctionNames) {
   ValidateUtf8(7, "Абс(знач)", {{"знач", -7}});
 }
 
+TEST(Express, FoldedVariadicFunctionsPreserveFormatAndValue) {
+  Validate(3, "Min(5, 4, 6, 8, 3, 10)");
+  Validate(9, "Max(5, 4, 6, 8, 3, 9)");
+  Validate(true, "Or(0, 0, 1, 0)");
+  Validate(false, "And(1, 1, 0, 1)");
+}
+
+TEST(Express, FoldedVariadicSingleArgumentFunctionsRemainStable) {
+  Validate(5, "Min(5)");
+  Validate(5, "Max(5)");
+  Validate(true, "Or(1)");
+  Validate(false, "And(0)");
+}
+
 TEST(Express, OrShortCircuitsLeftToRight) {
   int false_count = 0;
   int true_count = 0;
@@ -378,6 +392,11 @@ TEST(Express, AndShortCircuitsLeftToRight) {
                    "And(t, explode)",
                    {{"t", {true}}, {"explode", {false, true}}}),
                std::runtime_error);
+}
+
+TEST(Express, FoldedVariadicFunctionsChangeTraversalShape) {
+  EXPECT_EQ(5, GetTokenCount("Min(5, 6, 4)"));
+  EXPECT_EQ(7, GetTokenCount("Or(0, 0, 1, 0)"));
 }
 
 TEST(Expression, CustomExpression) {

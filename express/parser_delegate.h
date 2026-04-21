@@ -69,6 +69,9 @@ class BasicParserDelegate {
       throw std::runtime_error{"no parameters provided"};
     }
 
+    if (function->SupportsFoldedArguments())
+      return function->MakeFoldedToken(allocator_, std::move(arguments));
+
     return function->MakeToken(allocator_, arguments.data(), arguments.size());
   }
 

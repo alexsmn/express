@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <string_view>
+#include <vector>
 
 namespace expression {
 
@@ -19,6 +20,13 @@ class BasicFunction {
   virtual BasicToken MakeToken(Allocator& allocator,
                                BasicToken* arguments,
                                size_t argument_count) const = 0;
+
+  virtual bool SupportsFoldedArguments() const { return false; }
+
+  virtual BasicToken MakeFoldedToken(Allocator& allocator,
+                                     std::vector<BasicToken> arguments) const {
+    return MakeToken(allocator, arguments.data(), arguments.size());
+  }
 
   const std::string_view name;
   const int params = -1;

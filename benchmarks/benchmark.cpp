@@ -79,6 +79,11 @@ struct BooleanChainBenchmarkCase {
   const char* formula;
 };
 
+struct FoldedVariadicBenchmarkCase {
+  const char* name;
+  const char* formula;
+};
+
 const BenchmarkCase& GetCase(int index) {
   static const BenchmarkCase kCases[] = {
       {"simple_arithmetic", "1 + 2 + 3 + 4 + 5", {}},
@@ -99,6 +104,13 @@ const BooleanChainBenchmarkCase& GetBooleanChainCase(int index) {
       {"and_first_false",
        "And(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, "
        "1, 1, 1, 1, 1, 1, 1, 1, 1, 1)"}};
+  return kCases[index];
+}
+
+const FoldedVariadicBenchmarkCase& GetFoldedVariadicCase(int index) {
+  static const FoldedVariadicBenchmarkCase kCases[] = {
+      {"min_chain", "Min(9, 4, 6, 8, 3, 10, 2, 7)"},
+      {"or_chain", "Or(0, 0, 0, 0, 0, 0, 1, 0)"}};
   return kCases[index];
 }
 
@@ -201,6 +213,43 @@ bool CountTokens(const Token* token, void* param) {
   return true;
 }
 
+void BM_FoldedVariadicParse(benchmark::State& state) {
+  const auto& benchmark_case =
+      GetFoldedVariadicCase(static_cast<int>(state.range(0)));
+  for (auto _ : state) {
+    Expression expression;
+    expression.Parse(benchmark_case.formula);
+    benchmark::DoNotOptimize(expression.Calculate());
+  }
+  state.SetLabel(benchmark_case.name);
+}
+
+void BM_FoldedVariadicEvaluate(benchmark::State& state) {
+  const auto& benchmark_case =
+      GetFoldedVariadicCase(static_cast<int>(state.range(0)));
+  Expression expression;
+  expression.Parse(benchmark_case.formula);
+  for (auto _ : state) {
+    auto value = expression.Calculate();
+    benchmark::DoNotOptimize(value);
+    benchmark::ClobberMemory();
+  }
+  state.SetLabel(benchmark_case.name);
+}
+
+void BM_FoldedVariadicTraverse(benchmark::State& state) {
+  const auto& benchmark_case =
+      GetFoldedVariadicCase(static_cast<int>(state.range(0)));
+  Expression expression;
+  expression.Parse(benchmark_case.formula);
+  for (auto _ : state) {
+    int token_count = 0;
+    expression.Traverse(&CountTokens, &token_count);
+    benchmark::DoNotOptimize(token_count);
+  }
+  state.SetLabel(benchmark_case.name);
+}
+
 void BM_Traverse(benchmark::State& state) {
   const auto& benchmark_case = GetCase(static_cast<int>(state.range(0)));
   Expression expression;
@@ -243,6 +292,9 @@ BENCHMARK(BM_Evaluate)->DenseRange(0, 4);
 BENCHMARK(BM_RepeatedEvaluate)->DenseRange(0, 4);
 BENCHMARK(BM_Format)->DenseRange(0, 4);
 BENCHMARK(BM_BooleanChainEvaluate)->DenseRange(0, 1);
+BENCHMARK(BM_FoldedVariadicParse)->DenseRange(0, 1);
+BENCHMARK(BM_FoldedVariadicEvaluate)->DenseRange(0, 1);
+BENCHMARK(BM_FoldedVariadicTraverse)->DenseRange(0, 1);
 BENCHMARK(BM_Traverse)->DenseRange(0, 4);
 BENCHMARK(BM_ParseAndEvaluate)->DenseRange(0, 4);
 BENCHMARK(BM_ParseAndEvaluateReserved)->DenseRange(0, 4);
