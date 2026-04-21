@@ -1,6 +1,7 @@
 #pragma once
 
 #include "express/allocator.h"
+#include "express/arena_token.h"
 #include "express/lexer.h"
 #include "express/lexer_delegate.h"
 #include "express/parser.h"
@@ -17,6 +18,9 @@ class Token;
 template <class BasicToken>
 class BasicExpression {
  public:
+  // BasicToken must be a lightweight arena token such as PolymorphicToken.
+  static_assert(kIsArenaToken<BasicToken>,
+                "BasicToken must satisfy the arena token contract.");
   using BasicValue = decltype(std::declval<BasicToken>().Calculate(nullptr));
 
   BasicExpression() {}

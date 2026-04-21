@@ -1,5 +1,6 @@
 #pragma once
 
+#include "express/arena_token.h"
 #include "express/express.h"
 #include "express/function.h"
 #include "express/strings.h"
@@ -122,6 +123,9 @@ class BasicConditionalFunction : public BasicFunction<BasicToken> {
 template <typename BasicToken, typename T>
 class BasicVariadicFunction : public BasicFunction<BasicToken> {
  public:
+  // Variadic function arguments are copied into raw arena storage.
+  static_assert(kIsArenaToken<BasicToken>,
+                "BasicToken must satisfy the arena token contract.");
   explicit BasicVariadicFunction(std::string_view name)
       : BasicFunction<BasicToken>{name, -1} {}
 

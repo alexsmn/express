@@ -7,8 +7,10 @@
 
 #include <gtest/gtest.h>
 #include <cstring>
+#include <cstdint>
+#include <string>
+#include <type_traits>
 #include <unordered_map>
-#include <variant>
 
 namespace expression {
 
@@ -261,26 +263,40 @@ TEST(Express, SupportsUtf8IdentifiersAndFunctionNames) {
 }
 
 TEST(Expression, CustomExpression) {
+  static_assert(kIsArenaToken<PolymorphicToken>);
+  static_assert(!kIsArenaToken<std::string>);
+
   struct CustomToken {
-    explicit CustomToken(int i) : x{i} {}
-    explicit CustomToken(const Token* token) : x{token} {}
+    explicit CustomToken(int i)
+        : payload{static_cast<std::uintptr_t>(i)}, holds_value{true} {}
+    explicit CustomToken(const Token* token)
+        : payload{reinterpret_cast<std::uintptr_t>(token)}, holds_value{false} {}
 
     double Calculate(void* data) const {
-      if (auto* i = std::get_if<int>(&x))
-        return *i;
-      return std::get<const Token*>(x)->Calculate(data);
+      if (holds_value)
+        return static_cast<double>(payload);
+      return reinterpret_cast<const Token*>(payload)->Calculate(data);
     }
 
     void Format(const FormatterDelegate& delegate, std::string& str) const {}
 
     void Traverse(TraverseCallback callback, void* param) const {}
 
-    std::variant<int, const Token*> x;
+    std::uintptr_t payload;
+    bool holds_value;
   };
+
+  static_assert(kIsArenaToken<CustomToken>);
+  AssertArenaToken<PolymorphicToken>();
+  AssertArenaToken<CustomToken>();
 
   BasicExpression<CustomToken> e;
   e.Parse("5 + 6");
-  auto value = e.Calculate(nullptr);
+  EXPECT_EQ(11, e.Calculate(nullptr));
+
+  BasicExpression<CustomToken> variadic_expression;
+  variadic_expression.Parse("Min(5, 6, 4)");
+  EXPECT_EQ(4, variadic_expression.Calculate(nullptr));
 }
 
 }  // namespace expression

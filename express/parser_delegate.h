@@ -1,5 +1,6 @@
 #pragma once
 
+#include "express/arena_token.h"
 #include "express/function.h"
 #include "express/standard_functions.h"
 #include "express/standard_tokens.h"
@@ -13,6 +14,9 @@ class Allocator;
 template <class BasicToken>
 class BasicParserDelegate {
  public:
+  // BasicToken must be safe to store in allocator-backed raw memory.
+  static_assert(kIsArenaToken<BasicToken>,
+                "BasicToken must satisfy the arena token contract.");
   explicit BasicParserDelegate(Allocator& allocator) : allocator_{allocator} {}
   virtual ~BasicParserDelegate() = default;
 
