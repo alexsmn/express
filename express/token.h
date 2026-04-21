@@ -25,8 +25,11 @@ class EXPRESS_EXPORT Token {
 
 class PolymorphicToken {
  public:
+  PolymorphicToken() = default;
   explicit PolymorphicToken(const Token* token) : token_{token} {}
 
+  PolymorphicToken(const PolymorphicToken&) = default;
+  PolymorphicToken& operator=(const PolymorphicToken&) = default;
   PolymorphicToken(PolymorphicToken&&) = default;
   PolymorphicToken& operator=(PolymorphicToken&&) = default;
 
@@ -53,7 +56,7 @@ class PolymorphicToken {
 
 template <class T, class... Args>
 inline Token* CreateToken(Allocator& allocator, Args&&... args) {
-  auto* data = allocator.allocate(sizeof(T));
+  auto* data = allocator.allocate(sizeof(T), alignof(T));
   return new (data) T(std::forward<Args>(args)...);
 }
 

@@ -6,6 +6,7 @@
 #include "express/strings.h"
 
 #include <algorithm>
+#include <cstring>
 #include <functional>
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -148,9 +149,11 @@ class BasicVariadicFunction : public BasicFunction<BasicToken> {
               Allocator& allocator)
         : fun_{fun},
           params_{static_cast<BasicToken*>(
-              allocator.allocate(argument_count * sizeof(BasicToken)))},
+              allocator.allocate(argument_count * sizeof(BasicToken),
+                                 alignof(BasicToken)))},
           count_{argument_count} {
-      std::move(arguments, arguments + argument_count, params_);
+      for (size_t i = 0; i < count_; ++i)
+        new (params_ + i) BasicToken(arguments[i]);
     }
 
     virtual Value Calculate(void* data) const override {

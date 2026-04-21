@@ -50,21 +50,21 @@ function-heavy, variable-heavy, and long-string cases.
 
 ### Sample Benchmark Report
 
-The following results were collected on April 20, 2026 from a local debug
+The following results were collected on April 21, 2026 from a local debug
 build. They are useful as a relative baseline only; absolute timings will be
 lower in an optimized release build.
 
 | Workload | Parse CPU | Evaluate CPU | Format CPU | Traverse CPU | Parse + Evaluate CPU |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Simple arithmetic | 26.2 us | 436 ns | 3.1 us | 312 ns | 31.2 us |
-| Nested precedence | 19.5 us | 349 ns | 3.1 us | 312 ns | 17.4 us |
-| Function-heavy | 61.1 us | 312 ns | 17.4 us | 781 ns | 62.5 us |
-| Variable-heavy | 46.9 us | 625 ns | 4.7 us | 312 ns | 46.9 us |
-| Long string | 31.2 us | 4.4 us | 2.6 us | 174 ns | 26.2 us |
+| Simple arithmetic | 7.8 us | 625 ns | 6.3 us | 312 ns | 7.8 us |
+| Nested precedence | 4.7 us | 469 ns | 6.3 us | 349 ns | 5.4 us |
+| Function-heavy | 26.2 us | 312 ns | 17.4 us | 698 ns | 34.9 us |
+| Variable-heavy | 14.6 us | 436 ns | 6.3 us | 312 ns | 12.5 us |
+| Long string | 17.4 us | 4.7 us | 3.1 us | 312 ns | 7.8 us |
 
 Observed patterns:
 
 * Parsing dominates total cost for every workload in this debug run.
 * Pre-parsed evaluation is sub-microsecond for numeric expressions and about
-  4.4 microseconds for the string concatenation case.
+  4.7 microseconds for the string concatenation case.
 * Function-heavy expressions are the slowest to parse and to format.

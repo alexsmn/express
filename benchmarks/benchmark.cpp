@@ -28,16 +28,17 @@ class BenchmarkVariableToken : public Token {
 
  private:
   std::string_view name_;
-  const Value value_;
+  const Value& value_;
 };
 
 using BenchmarkVariables = std::unordered_map<std::string_view, Value>;
 
 class BenchmarkParserDelegate : public BasicParserDelegate<PolymorphicToken> {
  public:
-  BenchmarkParserDelegate(Allocator& allocator, BenchmarkVariables variables)
+  BenchmarkParserDelegate(Allocator& allocator,
+                          const BenchmarkVariables& variables)
       : BasicParserDelegate<PolymorphicToken>{allocator},
-        variables_{std::move(variables)} {}
+        variables_{variables} {}
 
   PolymorphicToken MakeCustomToken(
       const Lexem& lexem,
@@ -57,7 +58,7 @@ class BenchmarkParserDelegate : public BasicParserDelegate<PolymorphicToken> {
         allocator_, i->first, i->second);
   }
 
-  const BenchmarkVariables variables_;
+  const BenchmarkVariables& variables_;
 };
 
 class BenchmarkFormatterDelegate : public FormatterDelegate {

@@ -4,8 +4,10 @@
 #include "express/lexer_delegate.h"
 #include "express/parser.h"
 #include "express/parser_delegate.h"
+#include "express/strings.h"
 
 #include <gtest/gtest.h>
+#include <array>
 #include <cstring>
 #include <cstdint>
 #include <string>
@@ -297,6 +299,25 @@ TEST(Expression, CustomExpression) {
   BasicExpression<CustomToken> variadic_expression;
   variadic_expression.Parse("Min(5, 6, 4)");
   EXPECT_EQ(4, variadic_expression.Calculate(nullptr));
+}
+
+TEST(Allocator, AlignsAllocationsForOveralignedTypes) {
+  struct alignas(64) AlignedStorage {
+    std::array<char, 64> data;
+  };
+
+  Allocator allocator;
+  void* first = allocator.allocate(sizeof(AlignedStorage), alignof(AlignedStorage));
+  void* second = allocator.allocate(sizeof(AlignedStorage), alignof(AlignedStorage));
+
+  EXPECT_EQ(0u, reinterpret_cast<std::uintptr_t>(first) % alignof(AlignedStorage));
+  EXPECT_EQ(0u, reinterpret_cast<std::uintptr_t>(second) % alignof(AlignedStorage));
+}
+
+TEST(Strings, EqualsNoCaseHandlesHighBitBytes) {
+  const std::string a("\xC4", 1);
+  const std::string b("\xC4", 1);
+  EXPECT_TRUE(EqualsNoCase(a, b));
 }
 
 }  // namespace expression

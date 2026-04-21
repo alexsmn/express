@@ -116,14 +116,14 @@ repeat:
 
 std::optional<Lexem> Lexer::ReadStandardName() {
   const char* buf = buf_;
-  if (!std::isalpha(*buf))
+  if (!std::isalpha(static_cast<unsigned char>(*buf)))
     return std::nullopt;
 
   // read name
   const char* start = buf_;
   do {
     buf++;
-  } while (std::isalnum(*buf));
+  } while (std::isalnum(static_cast<unsigned char>(*buf)));
   buf_ = buf;
 
   std::string_view str(start, static_cast<size_t>(buf - start));
