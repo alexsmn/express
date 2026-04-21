@@ -329,6 +329,60 @@ TEST(Value, SelfAssignmentPreservesStringContents) {
   EXPECT_EQ(expected, std::string(static_cast<const char*>(value)));
 }
 
+TEST(Value, PreservesShortAndLongStringLiterals) {
+  const std::string short_string(Value::kInlineStringCapacity, '#');
+  const std::string long_string(Value::kInlineStringCapacity + 5, '$');
+
+  Value short_value{short_string};
+  Value long_value{long_string};
+
+  EXPECT_EQ(short_string, std::string(static_cast<const char*>(short_value)));
+  EXPECT_EQ(long_string, std::string(static_cast<const char*>(long_value)));
+}
+
+TEST(Value, ConcatenatesAcrossInlineStorageBoundary) {
+  const std::string short_left(Value::kInlineStringCapacity / 2, 'a');
+  const std::string short_right(Value::kInlineStringCapacity / 2, 'b');
+  const std::string long_tail(Value::kInlineStringCapacity, 'c');
+
+  Value short_concat{short_left};
+  short_concat += Value{short_right};
+  EXPECT_EQ(short_left + short_right,
+            std::string(static_cast<const char*>(short_concat)));
+
+  Value mixed_concat{short_left};
+  mixed_concat += Value{long_tail};
+  EXPECT_EQ(short_left + long_tail,
+            std::string(static_cast<const char*>(mixed_concat)));
+}
+
+TEST(Value, StringEqualityAndOrderingRemainStable) {
+  Value alpha{"alpha"};
+  Value alpha_copy{"alpha"};
+  Value alphabet{"alphabet"};
+  Value beta{"beta"};
+
+  EXPECT_EQ(alpha, alpha_copy);
+  EXPECT_NE(alpha, beta);
+  EXPECT_LT(alpha, alphabet);
+  EXPECT_LT(alphabet, beta);
+}
+
+TEST(Value, SelfAssignmentWorksAcrossInlineAndHeapThresholds) {
+  Value inline_value{std::string(Value::kInlineStringCapacity, 'i')};
+  Value heap_value{std::string(Value::kInlineStringCapacity + 8, 'h')};
+
+  Value& inline_alias = inline_value;
+  inline_value = inline_alias;
+  EXPECT_EQ(std::string(Value::kInlineStringCapacity, 'i'),
+            std::string(static_cast<const char*>(inline_value)));
+
+  Value& heap_alias = heap_value;
+  heap_value = heap_alias;
+  EXPECT_EQ(std::string(Value::kInlineStringCapacity + 8, 'h'),
+            std::string(static_cast<const char*>(heap_value)));
+}
+
 TEST(Express, SupportsUtf8IdentifiersAndFunctionNames) {
   ValidateUtf8(5, "变量 + 2", {{"变量", 3}});
   ValidateUtf8(7, "Абс(знач)", {{"знач", -7}});

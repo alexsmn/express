@@ -69,23 +69,23 @@ Exit criteria:
 
 Commit: `Add inline string storage to Value`
 
-- [ ] In [express/value.h](/mnt/d/tc/third_party/express/express/value.h), redesign string storage to support small-string optimization.
-- [ ] Keep constructors, conversions, comparisons, concatenation, and assignment source-compatible.
-- [ ] Preserve stable ownership semantics for computed strings.
-- [ ] In [express/standard_tokens.h](/mnt/d/tc/third_party/express/express/standard_tokens.h), ensure parsed string literals benefit from the new representation with minimal copying.
-- [ ] In [tests/test.cpp](/mnt/d/tc/third_party/express/tests/test.cpp), add coverage for:
-  - [ ] short literal strings
-  - [ ] long literal strings
-  - [ ] short+short concat
-  - [ ] short+long concat
-  - [ ] equality and ordering
-  - [ ] self-assignment across inline and heap-backed thresholds
-- [ ] In [benchmarks/benchmark.cpp](/mnt/d/tc/third_party/express/benchmarks/benchmark.cpp), add stronger string-heavy workloads and refresh results.
+- [x] In [express/value.h](/mnt/d/tc/third_party/express/express/value.h), redesign string storage to support small-string optimization.
+- [x] Keep constructors, conversions, comparisons, concatenation, and assignment source-compatible.
+- [x] Preserve stable ownership semantics for computed strings.
+- [x] In [express/standard_tokens.h](/mnt/d/tc/third_party/express/express/standard_tokens.h), ensure parsed string literals benefit from the new representation with minimal copying.
+- [x] In [tests/test.cpp](/mnt/d/tc/third_party/express/tests/test.cpp), add coverage for:
+  - [x] short literal strings
+  - [x] long literal strings
+  - [x] short+short concat
+  - [x] short+long concat
+  - [x] equality and ordering
+  - [x] self-assignment across inline and heap-backed thresholds
+- [x] In [benchmarks/benchmark.cpp](/mnt/d/tc/third_party/express/benchmarks/benchmark.cpp), add stronger string-heavy workloads and refresh results.
 
 Exit criteria:
 
-- [ ] String-heavy evaluation improves significantly.
-- [ ] Existing `Value` behavior remains intact.
+- [x] String-heavy evaluation improves significantly.
+- [x] Existing `Value` behavior remains intact.
 
 ## Phase 6: Specialize the Default Engine
 
@@ -109,7 +109,7 @@ Exit criteria:
 ## Recommended Gate Between Phases
 
 - [x] Do not start Phase 4 until Phase 3 benchmarks confirm short-circuit improvements.
-- [ ] Do not start Phase 6 until Phase 5 benchmark gains are measured; otherwise it will be hard to attribute wins.
+- [x] Do not start Phase 6 until Phase 5 benchmark gains are measured; otherwise it will be hard to attribute wins.
 - [ ] Refresh README benchmark numbers only after Phases 1, 3, 5, and 6, not after every phase.
 
 ## Suggested Final Validation Pass

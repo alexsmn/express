@@ -92,6 +92,11 @@ const BenchmarkCase& GetCase(int index) {
       {"variable_heavy", "alpha + beta * gamma - delta / epsilon",
        {{"alpha", 11}, {"beta", 7}, {"gamma", 3}, {"delta", 20}, {"epsilon", 5}}},
       {"long_string", "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" + \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"",
+       {}},
+      {"string_concat_heavy",
+       "\"alpha_beta_gamma\" + \"delta_eps_zeta\" + \"eta_theta_iota\" + "
+       "\"kappa_lambda_mu\" + \"nu_xi_omicron\" + \"pi_rho_sigma\" + "
+       "\"tau_ups_phi\" + \"chi_psi_omega\"",
        {}}};
   return kCases[index];
 }
@@ -286,18 +291,18 @@ void BM_ParseAndEvaluateReserved(benchmark::State& state) {
   state.SetLabel(benchmark_case.name);
 }
 
-BENCHMARK(BM_Parse)->DenseRange(0, 4);
-BENCHMARK(BM_ParseReserved)->DenseRange(0, 4);
-BENCHMARK(BM_Evaluate)->DenseRange(0, 4);
-BENCHMARK(BM_RepeatedEvaluate)->DenseRange(0, 4);
-BENCHMARK(BM_Format)->DenseRange(0, 4);
+BENCHMARK(BM_Parse)->DenseRange(0, 5);
+BENCHMARK(BM_ParseReserved)->DenseRange(0, 5);
+BENCHMARK(BM_Evaluate)->DenseRange(0, 5);
+BENCHMARK(BM_RepeatedEvaluate)->DenseRange(0, 5);
+BENCHMARK(BM_Format)->DenseRange(0, 5);
 BENCHMARK(BM_BooleanChainEvaluate)->DenseRange(0, 1);
 BENCHMARK(BM_FoldedVariadicParse)->DenseRange(0, 1);
 BENCHMARK(BM_FoldedVariadicEvaluate)->DenseRange(0, 1);
 BENCHMARK(BM_FoldedVariadicTraverse)->DenseRange(0, 1);
-BENCHMARK(BM_Traverse)->DenseRange(0, 4);
-BENCHMARK(BM_ParseAndEvaluate)->DenseRange(0, 4);
-BENCHMARK(BM_ParseAndEvaluateReserved)->DenseRange(0, 4);
+BENCHMARK(BM_Traverse)->DenseRange(0, 5);
+BENCHMARK(BM_ParseAndEvaluate)->DenseRange(0, 5);
+BENCHMARK(BM_ParseAndEvaluateReserved)->DenseRange(0, 5);
 
 }  // namespace
 }  // namespace expression

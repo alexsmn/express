@@ -28,13 +28,10 @@ class ValueToken : public Token {
 class StringValueToken : public Token {
  public:
   StringValueToken(std::string_view str, Allocator& allocator)
-      : len_{static_cast<int>(str.size())},
-        str_{static_cast<char*>(allocator.allocate(len_))} {
-    memcpy(str_, str.data(), len_);
-  }
+      : str_{AllocateLiteralStorage(str, allocator)} {}
 
   virtual Value Calculate(void* data) const override {
-    return Value{str_, len_};
+    return Value{str_};
   }
 
   virtual void Traverse(TraverseCallback callback, void* param) const override {
@@ -44,13 +41,20 @@ class StringValueToken : public Token {
   virtual void Format(const FormatterDelegate& delegate,
                       std::string& str) const override {
     str += '"';
-    str.append(str_, len_);
+    str.append(str_.data(), str_.size());
     str += '"';
   }
 
  private:
-  const int len_;
-  char* str_;
+  static std::string_view AllocateLiteralStorage(std::string_view str,
+                                                 Allocator& allocator) {
+    auto* storage =
+        static_cast<char*>(allocator.allocate(str.size() + 1, alignof(char)));
+    memcpy(storage, str.data(), str.size());
+    storage[str.size()] = '\0';
+    return std::string_view(storage, str.size());
+  }
+  const std::string_view str_;
 };
 
 template <class OperandToken>
