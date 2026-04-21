@@ -3,7 +3,9 @@
 #include "express/express_export.h"
 #include "express/value.h"
 
+#include <charconv>
 #include <cassert>
+#include <system_error>
 #include <string>
 
 namespace expression {
@@ -13,6 +15,14 @@ class EXPRESS_EXPORT FormatterDelegate {
   virtual ~FormatterDelegate() {}
 
   virtual void AppendDouble(std::string& str, double value) const {
+#if defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 201611L
+    char buffer[64];
+    auto result = std::to_chars(buffer, buffer + sizeof(buffer), value);
+    if (result.ec == std::errc{}) {
+      str.append(buffer, result.ptr);
+      return;
+    }
+#endif
     str.append(std::to_string(value));
   }
 

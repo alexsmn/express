@@ -64,7 +64,7 @@ class BenchmarkParserDelegate : public BasicParserDelegate<PolymorphicToken> {
 class BenchmarkFormatterDelegate : public FormatterDelegate {
  public:
   void AppendDouble(std::string& str, double value) const override {
-    str.append(std::to_string(static_cast<int>(value)));
+    FormatterDelegate::AppendDouble(str, value);
   }
 };
 
@@ -117,6 +117,21 @@ void BM_Evaluate(benchmark::State& state) {
   state.SetLabel(benchmark_case.name);
 }
 
+void BM_RepeatedEvaluate(benchmark::State& state) {
+  const auto& benchmark_case = GetCase(static_cast<int>(state.range(0)));
+  Expression expression;
+  ParseExpression(benchmark_case, expression);
+  for (auto _ : state) {
+    for (int i = 0; i < 64; ++i) {
+      auto value = expression.Calculate();
+      benchmark::DoNotOptimize(value);
+    }
+    benchmark::ClobberMemory();
+  }
+  state.SetItemsProcessed(state.iterations() * 64);
+  state.SetLabel(benchmark_case.name);
+}
+
 void BM_Format(benchmark::State& state) {
   const auto& benchmark_case = GetCase(static_cast<int>(state.range(0)));
   Expression expression;
@@ -161,6 +176,7 @@ void BM_ParseAndEvaluate(benchmark::State& state) {
 
 BENCHMARK(BM_Parse)->DenseRange(0, 4);
 BENCHMARK(BM_Evaluate)->DenseRange(0, 4);
+BENCHMARK(BM_RepeatedEvaluate)->DenseRange(0, 4);
 BENCHMARK(BM_Format)->DenseRange(0, 4);
 BENCHMARK(BM_Traverse)->DenseRange(0, 4);
 BENCHMARK(BM_ParseAndEvaluate)->DenseRange(0, 4);
