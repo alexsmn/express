@@ -87,7 +87,7 @@ class Value {
       _bad_type();
     return number_;
   }
-  operator bool() const { return (double)*this >= kPrecision; }
+  operator bool() const { return fabs((double)*this) >= kPrecision; }
   operator const char*() const {
     if (type_ != Type::String)
       _bad_type();
@@ -107,6 +107,8 @@ class Value {
   }
 
   Value& operator=(const Value& right) {
+    if (this == &right)
+      return *this;
     _clear();
     _set(right);
     return *this;

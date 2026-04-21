@@ -14,6 +14,7 @@ template <class BasicToken>
 class BasicParserDelegate {
  public:
   explicit BasicParserDelegate(Allocator& allocator) : allocator_{allocator} {}
+  virtual ~BasicParserDelegate() = default;
 
   BasicToken MakeDoubleToken(double value) {
     return BasicToken{CreateToken<ValueToken<double>>(allocator_, value)};
@@ -72,7 +73,8 @@ class BasicParserDelegate {
     throw std::runtime_error{"unexpected token"};
   }
 
-  const BasicFunction<BasicToken>* FindBasicFunction(std::string_view name) {
+  virtual const BasicFunction<BasicToken>* FindBasicFunction(
+      std::string_view name) {
     return functions::FindDefaultFunction<BasicToken>(name);
   }
 
