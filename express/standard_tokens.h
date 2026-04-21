@@ -30,9 +30,7 @@ class StringValueToken : public Token {
   StringValueToken(std::string_view str, Allocator& allocator)
       : str_{AllocateLiteralStorage(str, allocator)} {}
 
-  virtual Value Calculate(void* data) const override {
-    return Value{str_};
-  }
+  virtual Value Calculate(void* data) const override { return Value{str_}; }
 
   virtual void Traverse(TraverseCallback callback, void* param) const override {
     callback(this, param);

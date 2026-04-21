@@ -8,8 +8,8 @@
 #define EXPRESS_EXPORT __declspec(dllimport)
 #endif
 
-#else // COMPONENT_BUILD
+#else  // COMPONENT_BUILD
 
 #define EXPRESS_EXPORT
 
-#endif // COMPONENT_BUILD
+#endif  // COMPONENT_BUILD

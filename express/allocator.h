@@ -26,8 +26,7 @@ class EXPRESS_EXPORT Allocator {
     return *this;
   }
 
-  void* allocate(size_t len,
-                 size_t alignment = alignof(std::max_align_t)) {
+  void* allocate(size_t len, size_t alignment = alignof(std::max_align_t)) {
     if (!chunks_.empty()) {
       void* ptr = allocate_from_chunk(chunks_.back(), len, alignment);
       if (ptr)
@@ -63,8 +62,8 @@ class EXPRESS_EXPORT Allocator {
  private:
   struct Chunk {
     explicit Chunk(size_t capacity, size_t alignment)
-        : data_{static_cast<std::byte*>(::operator new(
-              capacity, std::align_val_t{alignment}))},
+        : data_{static_cast<std::byte*>(
+              ::operator new(capacity, std::align_val_t{alignment}))},
           capacity_{capacity},
           alignment_{alignment} {}
 
@@ -80,8 +79,8 @@ class EXPRESS_EXPORT Allocator {
         : data_{std::exchange(other.data_, nullptr)},
           size_{std::exchange(other.size_, 0)},
           capacity_{std::exchange(other.capacity_, 0)},
-          alignment_{std::exchange(other.alignment_, alignof(std::max_align_t))} {
-    }
+          alignment_{
+              std::exchange(other.alignment_, alignof(std::max_align_t))} {}
 
     Chunk& operator=(Chunk&& other) noexcept {
       if (this == &other)
@@ -93,8 +92,7 @@ class EXPRESS_EXPORT Allocator {
       data_ = std::exchange(other.data_, nullptr);
       size_ = std::exchange(other.size_, 0);
       capacity_ = std::exchange(other.capacity_, 0);
-      alignment_ =
-          std::exchange(other.alignment_, alignof(std::max_align_t));
+      alignment_ = std::exchange(other.alignment_, alignof(std::max_align_t));
       return *this;
     }
 
@@ -105,9 +103,9 @@ class EXPRESS_EXPORT Allocator {
   };
 
   Chunk& allocate_chunk(size_t capacity, size_t alignment) {
-    auto& chunk = chunks_.emplace_back(
-        std::max(kMinCapacity, capacity + alignment - 1),
-        std::max(alignment, alignof(std::max_align_t)));
+    auto& chunk =
+        chunks_.emplace_back(std::max(kMinCapacity, capacity + alignment - 1),
+                             std::max(alignment, alignof(std::max_align_t)));
     return chunk;
   }
 

@@ -234,9 +234,9 @@ class BasicBinaryFoldFunction : public BasicFunction<BasicToken> {
       return MakeUnaryToken(allocator, std::move(arguments.front()));
 
     if constexpr (kShortCircuit) {
-      BasicToken folded = MakeBinaryToken(
-          allocator, std::move(arguments[arguments.size() - 2]),
-          std::move(arguments[arguments.size() - 1]));
+      BasicToken folded =
+          MakeBinaryToken(allocator, std::move(arguments[arguments.size() - 2]),
+                          std::move(arguments[arguments.size() - 1]));
       for (size_t i = arguments.size() - 2; i-- > 0;) {
         folded = MakeBinaryToken(allocator, std::move(arguments[i]),
                                  std::move(folded));
@@ -244,8 +244,8 @@ class BasicBinaryFoldFunction : public BasicFunction<BasicToken> {
       return folded;
     }
 
-    BasicToken folded =
-        MakeBinaryToken(allocator, std::move(arguments[0]), std::move(arguments[1]));
+    BasicToken folded = MakeBinaryToken(allocator, std::move(arguments[0]),
+                                        std::move(arguments[1]));
     for (size_t i = 2; i < arguments.size(); ++i) {
       folded = MakeBinaryToken(allocator, std::move(folded),
                                std::move(arguments[i]));
@@ -259,7 +259,9 @@ class BasicBinaryFoldFunction : public BasicFunction<BasicToken> {
     UnaryTokenImpl(const BasicBinaryFoldFunction& fun, BasicToken&& argument)
         : fun_{fun}, argument_{std::move(argument)} {}
 
-    Value Calculate(void* data) const override { return argument_.Calculate(data); }
+    Value Calculate(void* data) const override {
+      return argument_.Calculate(data);
+    }
 
     void Traverse(TraverseCallback callback, void* param) const override {
       callback(this, param);
@@ -323,8 +325,8 @@ class BasicBinaryFoldFunction : public BasicFunction<BasicToken> {
   BasicToken MakeBinaryToken(Allocator& allocator,
                              BasicToken&& left,
                              BasicToken&& right) const {
-    return BasicToken{
-        CreateToken<TokenImpl>(allocator, *this, std::move(left), std::move(right))};
+    return BasicToken{CreateToken<TokenImpl>(allocator, *this, std::move(left),
+                                             std::move(right))};
   }
 
   BasicToken MakeUnaryToken(Allocator& allocator, BasicToken&& argument) const {
@@ -467,14 +469,9 @@ inline const F* FindFunction(const F** list, std::string_view name) {
 template <class BasicToken>
 inline const BasicFunction<BasicToken>* FindDefaultFunction(
     std::string_view name) {
-  static BasicBinaryFoldFunction<BasicToken,
-                                 std::logical_or<Value>,
-                                 true,
-                                 true>
+  static BasicBinaryFoldFunction<BasicToken, std::logical_or<Value>, true, true>
       logical_or_fun("Or");
-  static BasicBinaryFoldFunction<BasicToken,
-                                 std::logical_and<Value>,
-                                 true,
+  static BasicBinaryFoldFunction<BasicToken, std::logical_and<Value>, true,
                                  false>
       logical_and_fun("And");
   static BasicBinaryFoldFunction<BasicToken, Min<Value>> min_fun("Min");

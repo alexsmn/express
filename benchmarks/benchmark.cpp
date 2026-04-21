@@ -22,7 +22,8 @@ class BenchmarkVariableToken : public Token {
 
   void Traverse(TraverseCallback callback, void* param) const override {}
 
-  void Format(const FormatterDelegate& delegate, std::string& str) const override {
+  void Format(const FormatterDelegate& delegate,
+              std::string& str) const override {
     str += name_;
   }
 
@@ -54,8 +55,8 @@ class BenchmarkParserDelegate : public BasicParserDelegate<PolymorphicToken> {
     if (i == variables_.end())
       throw std::runtime_error{"Unknown variable name"};
 
-    return MakePolymorphicToken<BenchmarkVariableToken>(
-        allocator_, i->first, i->second);
+    return MakePolymorphicToken<BenchmarkVariableToken>(allocator_, i->first,
+                                                        i->second);
   }
 
   const BenchmarkVariables& variables_;
@@ -89,9 +90,16 @@ const BenchmarkCase& GetCase(int index) {
       {"simple_arithmetic", "1 + 2 + 3 + 4 + 5", {}},
       {"nested_precedence", "(10 - (5 + 3)) * 3", {}},
       {"function_heavy", "If(2 - 1 - 1, Min(5, 4, 6, 8, 3, 10), Or(0, 1))", {}},
-      {"variable_heavy", "alpha + beta * gamma - delta / epsilon",
-       {{"alpha", 11}, {"beta", 7}, {"gamma", 3}, {"delta", 20}, {"epsilon", 5}}},
-      {"long_string", "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" + \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"",
+      {"variable_heavy",
+       "alpha + beta * gamma - delta / epsilon",
+       {{"alpha", 11},
+        {"beta", 7},
+        {"gamma", 3},
+        {"delta", 20},
+        {"epsilon", 5}}},
+      {"long_string",
+       "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" + "
+       "\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"",
        {}},
       {"string_concat_heavy",
        "\"alpha_beta_gamma\" + \"delta_eps_zeta\" + \"eta_theta_iota\" + "
@@ -119,7 +127,8 @@ const FoldedVariadicBenchmarkCase& GetFoldedVariadicCase(int index) {
   return kCases[index];
 }
 
-void ParseExpression(const BenchmarkCase& benchmark_case, Expression& expression) {
+void ParseExpression(const BenchmarkCase& benchmark_case,
+                     Expression& expression) {
   LexerDelegate lexer_delegate;
   Lexer lexer{benchmark_case.formula, lexer_delegate, 0};
   Allocator allocator;

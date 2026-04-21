@@ -57,7 +57,9 @@ class Value {
   }
 
   operator int() const { return static_cast<int>(static_cast<double>(*this)); }
-  operator float() const { return static_cast<float>(static_cast<double>(*this)); }
+  operator float() const {
+    return static_cast<float>(static_cast<double>(*this));
+  }
   operator double() const {
     if (type_ != Type::Number)
       _bad_type();
@@ -162,9 +164,9 @@ class Value {
       case Type::Number:
         return number_ < (double)right;
       case Type::String: {
-        const int compare = memcmp(
-            string_data(), right.string_data(),
-            static_cast<size_t>(std::min(string_length_, right.string_length_)));
+        const int compare = memcmp(string_data(), right.string_data(),
+                                   static_cast<size_t>(std::min(
+                                       string_length_, right.string_length_)));
         if (compare != 0)
           return compare < 0;
         return string_length_ < right.string_length_;

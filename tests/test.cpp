@@ -6,10 +6,10 @@
 #include "express/parser_delegate.h"
 #include "express/strings.h"
 
-#include <gtest/gtest.h>
 #include <array>
-#include <cstring>
 #include <cstdint>
+#include <cstring>
+#include <gtest/gtest.h>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -93,13 +93,12 @@ class Utf8LexerDelegate : public LexerDelegate {
     } while (IsUtf8IdentifierByte(*current));
 
     return Lexem::String(
-        LEX_NAME, std::string_view(start, static_cast<size_t>(buffer.buf - start)));
+        LEX_NAME,
+        std::string_view(start, static_cast<size_t>(buffer.buf - start)));
   }
 
  private:
-  static bool IsUtf8IdentifierByte(unsigned char c) {
-    return c >= 0x80;
-  }
+  static bool IsUtf8IdentifierByte(unsigned char c) { return c >= 0x80; }
 };
 
 using Utf8Variables = std::unordered_map<std::string, Value>;
@@ -133,8 +132,8 @@ class Utf8ParserDelegate : public BasicParserDelegate<PolymorphicToken> {
                                  PolymorphicToken* arguments,
                                  size_t argument_count) const override {
         EXPECT_EQ(1u, argument_count);
-        return PolymorphicToken{CreateToken<TokenImpl>(
-            allocator, std::move(arguments[0]))};
+        return PolymorphicToken{
+            CreateToken<TokenImpl>(allocator, std::move(arguments[0]))};
       }
 
      private:
@@ -180,7 +179,8 @@ struct LogicalOperandSpec {
   int* evaluation_count = nullptr;
 };
 
-using LogicalOperands = std::unordered_map<std::string_view, LogicalOperandSpec>;
+using LogicalOperands =
+    std::unordered_map<std::string_view, LogicalOperandSpec>;
 
 class LogicalOperandToken : public Token {
  public:
@@ -199,7 +199,8 @@ class LogicalOperandToken : public Token {
     callback(this, param);
   }
 
-  void Format(const FormatterDelegate& delegate, std::string& str) const override {
+  void Format(const FormatterDelegate& delegate,
+              std::string& str) const override {
     str += name_;
   }
 
@@ -223,9 +224,8 @@ class LogicalParserDelegate : public BasicParserDelegate<PolymorphicToken> {
     if (i == operands_.end())
       throw std::runtime_error{"Unknown operand"};
 
-    return expression::MakePolymorphicToken<LogicalOperandToken>(allocator_,
-                                                                 i->first,
-                                                                 i->second);
+    return expression::MakePolymorphicToken<LogicalOperandToken>(
+        allocator_, i->first, i->second);
   }
 
  private:
@@ -250,7 +250,7 @@ void Validate(Value expected_result,
 }
 
 Value CalculateLogicalFormula(const char* formula,
-                             LogicalOperands operands = {}) {
+                              LogicalOperands operands = {}) {
   Expression ex;
   LexerDelegate lexer_delegate;
   Lexer lexer{formula, lexer_delegate, 0};
@@ -419,10 +419,10 @@ TEST(Express, OrShortCircuitsLeftToRight) {
   EXPECT_EQ(1, true_count);
   EXPECT_EQ(0, explode_count);
 
-  EXPECT_THROW(CalculateLogicalFormula(
-                   "Or(f, explode)",
-                   {{"f", {false}}, {"explode", {false, true}}}),
-               std::runtime_error);
+  EXPECT_THROW(
+      CalculateLogicalFormula("Or(f, explode)",
+                              {{"f", {false}}, {"explode", {false, true}}}),
+      std::runtime_error);
 }
 
 TEST(Express, AndShortCircuitsLeftToRight) {
@@ -442,10 +442,10 @@ TEST(Express, AndShortCircuitsLeftToRight) {
   EXPECT_EQ(1, false_count);
   EXPECT_EQ(0, explode_count);
 
-  EXPECT_THROW(CalculateLogicalFormula(
-                   "And(t, explode)",
-                   {{"t", {true}}, {"explode", {false, true}}}),
-               std::runtime_error);
+  EXPECT_THROW(
+      CalculateLogicalFormula("And(t, explode)",
+                              {{"t", {true}}, {"explode", {false, true}}}),
+      std::runtime_error);
 }
 
 TEST(Express, FoldedVariadicFunctionsChangeTraversalShape) {
@@ -461,7 +461,8 @@ TEST(Expression, CustomExpression) {
     explicit CustomToken(int i)
         : payload{static_cast<std::uintptr_t>(i)}, holds_value{true} {}
     explicit CustomToken(const Token* token)
-        : payload{reinterpret_cast<std::uintptr_t>(token)}, holds_value{false} {}
+        : payload{reinterpret_cast<std::uintptr_t>(token)},
+          holds_value{false} {}
 
     double Calculate(void* data) const {
       if (holds_value)
@@ -496,11 +497,15 @@ TEST(Allocator, AlignsAllocationsForOveralignedTypes) {
   };
 
   Allocator allocator;
-  void* first = allocator.allocate(sizeof(AlignedStorage), alignof(AlignedStorage));
-  void* second = allocator.allocate(sizeof(AlignedStorage), alignof(AlignedStorage));
+  void* first =
+      allocator.allocate(sizeof(AlignedStorage), alignof(AlignedStorage));
+  void* second =
+      allocator.allocate(sizeof(AlignedStorage), alignof(AlignedStorage));
 
-  EXPECT_EQ(0u, reinterpret_cast<std::uintptr_t>(first) % alignof(AlignedStorage));
-  EXPECT_EQ(0u, reinterpret_cast<std::uintptr_t>(second) % alignof(AlignedStorage));
+  EXPECT_EQ(0u,
+            reinterpret_cast<std::uintptr_t>(first) % alignof(AlignedStorage));
+  EXPECT_EQ(0u,
+            reinterpret_cast<std::uintptr_t>(second) % alignof(AlignedStorage));
 }
 
 TEST(Allocator, ReserveBytesRespectsAlignmentForSubsequentAllocations) {
@@ -511,17 +516,15 @@ TEST(Allocator, ReserveBytesRespectsAlignmentForSubsequentAllocations) {
   Allocator allocator;
   allocator.reserve_bytes(512, alignof(WideAlignedStorage));
 
-  void* first =
-      allocator.allocate(sizeof(WideAlignedStorage), alignof(WideAlignedStorage));
-  void* second =
-      allocator.allocate(sizeof(WideAlignedStorage), alignof(WideAlignedStorage));
+  void* first = allocator.allocate(sizeof(WideAlignedStorage),
+                                   alignof(WideAlignedStorage));
+  void* second = allocator.allocate(sizeof(WideAlignedStorage),
+                                    alignof(WideAlignedStorage));
 
-  EXPECT_EQ(0u,
-            reinterpret_cast<std::uintptr_t>(first) %
-                alignof(WideAlignedStorage));
-  EXPECT_EQ(0u,
-            reinterpret_cast<std::uintptr_t>(second) %
-                alignof(WideAlignedStorage));
+  EXPECT_EQ(0u, reinterpret_cast<std::uintptr_t>(first) %
+                    alignof(WideAlignedStorage));
+  EXPECT_EQ(0u, reinterpret_cast<std::uintptr_t>(second) %
+                    alignof(WideAlignedStorage));
 }
 
 TEST(Allocator, ReserveBytesCanUpgradeAlignmentAfterExistingAllocations) {
@@ -533,16 +536,15 @@ TEST(Allocator, ReserveBytesCanUpgradeAlignmentAfterExistingAllocations) {
   allocator.allocate(1);
   allocator.reserve_bytes(512, alignof(WideAlignedStorage));
 
-  void* ptr =
-      allocator.allocate(sizeof(WideAlignedStorage), alignof(WideAlignedStorage));
+  void* ptr = allocator.allocate(sizeof(WideAlignedStorage),
+                                 alignof(WideAlignedStorage));
 
-  EXPECT_EQ(0u,
-            reinterpret_cast<std::uintptr_t>(ptr) % alignof(WideAlignedStorage));
+  EXPECT_EQ(
+      0u, reinterpret_cast<std::uintptr_t>(ptr) % alignof(WideAlignedStorage));
 }
 
 TEST(Allocator, ReserveDoesNotChangeParseBehavior) {
-  constexpr const char* kFormula =
-      "If(8 - 3, Min(5, 9, 4), 1 + 2)";
+  constexpr const char* kFormula = "If(8 - 3, Min(5, 9, 4), 1 + 2)";
 
   Expression reserved_expression;
   {
