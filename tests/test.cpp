@@ -383,9 +383,67 @@ TEST(Value, SelfAssignmentWorksAcrossInlineAndHeapThresholds) {
             std::string(static_cast<const char*>(heap_value)));
 }
 
+TEST(Value, MoveConstructionPreservesShortAndLongStrings) {
+  const std::string short_string(Value::kInlineStringCapacity, 's');
+  const std::string long_string(Value::kInlineStringCapacity + 9, 'l');
+
+  Value moved_short{Value{short_string}};
+  Value moved_long{Value{long_string}};
+
+  EXPECT_EQ(short_string, std::string(static_cast<const char*>(moved_short)));
+  EXPECT_EQ(long_string, std::string(static_cast<const char*>(moved_long)));
+}
+
+TEST(Value, MoveAssignmentPreservesStringsAndLeavesSourceReusable) {
+  const std::string short_string(Value::kInlineStringCapacity - 1, 'a');
+  const std::string long_string(Value::kInlineStringCapacity + 11, 'b');
+
+  Value target{"seed"};
+  Value source{long_string};
+  target = std::move(source);
+
+  EXPECT_EQ(long_string, std::string(static_cast<const char*>(target)));
+
+  source = short_string.c_str();
+  EXPECT_EQ(short_string, std::string(static_cast<const char*>(source)));
+
+  Value short_target{123};
+  Value short_source{short_string};
+  short_target = std::move(short_source);
+
+  EXPECT_EQ(short_string, std::string(static_cast<const char*>(short_target)));
+
+  short_source = long_string.c_str();
+  EXPECT_EQ(long_string, std::string(static_cast<const char*>(short_source)));
+}
+
+TEST(Value, SwapPreservesInlineAndHeapStrings) {
+  const std::string inline_string(Value::kInlineStringCapacity, 'x');
+  const std::string heap_string(Value::kInlineStringCapacity + 7, 'y');
+
+  Value left{inline_string};
+  Value right{heap_string};
+  left.swap(right);
+
+  EXPECT_EQ(heap_string, std::string(static_cast<const char*>(left)));
+  EXPECT_EQ(inline_string, std::string(static_cast<const char*>(right)));
+}
+
 TEST(Express, SupportsUtf8IdentifiersAndFunctionNames) {
   ValidateUtf8(5, "变量 + 2", {{"变量", 3}});
   ValidateUtf8(7, "Абс(знач)", {{"знач", -7}});
+}
+
+TEST(Express, DefaultParseHandlesStringLiteralsAndConcatenation) {
+  const std::string literal(Value::kInlineStringCapacity + 12, '#');
+  const std::string formula = "\"" + literal + "\" + \"!\"";
+
+  Expression expression;
+  expression.Parse(formula.c_str());
+
+  TestFormatterDelegate formatter_delegate;
+  EXPECT_EQ(formula, expression.Format(formatter_delegate));
+  EXPECT_EQ(literal + "!", std::string(static_cast<const char*>(expression.Calculate())));
 }
 
 TEST(Express, FoldedVariadicFunctionsPreserveFormatAndValue) {
