@@ -84,6 +84,11 @@ struct FoldedVariadicBenchmarkCase {
   const char* formula;
 };
 
+struct DefaultPathBenchmarkCase {
+  const char* name;
+  const char* formula;
+};
+
 const BenchmarkCase& GetCase(int index) {
   static const BenchmarkCase kCases[] = {
       {"simple_arithmetic", "1 + 2 + 3 + 4 + 5", {}},
@@ -119,6 +124,19 @@ const FoldedVariadicBenchmarkCase& GetFoldedVariadicCase(int index) {
   return kCases[index];
 }
 
+const DefaultPathBenchmarkCase& GetDefaultPathCase(int index) {
+  static const DefaultPathBenchmarkCase kCases[] = {
+      {"simple_arithmetic", "1 + 2 + 3 + 4 + 5"},
+      {"nested_precedence", "(10 - (5 + 3)) * 3"},
+      {"function_heavy", "If(2 - 1 - 1, Min(5, 4, 6, 8, 3, 10), Or(0, 1))"},
+      {"long_string", "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" + \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\""},
+      {"string_concat_heavy",
+       "\"alpha_beta_gamma\" + \"delta_eps_zeta\" + \"eta_theta_iota\" + "
+       "\"kappa_lambda_mu\" + \"nu_xi_omicron\" + \"pi_rho_sigma\" + "
+       "\"tau_ups_phi\" + \"chi_psi_omega\""}};
+  return kCases[index];
+}
+
 void ParseExpression(const BenchmarkCase& benchmark_case, Expression& expression) {
   LexerDelegate lexer_delegate;
   Lexer lexer{benchmark_case.formula, lexer_delegate, 0};
@@ -126,6 +144,11 @@ void ParseExpression(const BenchmarkCase& benchmark_case, Expression& expression
   BenchmarkParserDelegate parser_delegate{allocator, benchmark_case.variables};
   BasicParser<Lexer, BenchmarkParserDelegate> parser{lexer, parser_delegate};
   expression.Parse(parser, allocator);
+}
+
+void ParseExpressionDefault(const BenchmarkCase& benchmark_case,
+                            Expression& expression) {
+  expression.Parse(benchmark_case.formula);
 }
 
 void ParseExpressionReserved(const BenchmarkCase& benchmark_case,
@@ -176,6 +199,40 @@ void BM_RepeatedEvaluate(benchmark::State& state) {
   const auto& benchmark_case = GetCase(static_cast<int>(state.range(0)));
   Expression expression;
   ParseExpression(benchmark_case, expression);
+  for (auto _ : state) {
+    for (int i = 0; i < 64; ++i) {
+      auto value = expression.Calculate();
+      benchmark::DoNotOptimize(value);
+    }
+    benchmark::ClobberMemory();
+  }
+  state.SetItemsProcessed(state.iterations() * 64);
+  state.SetLabel(benchmark_case.name);
+}
+
+void BM_DefaultRepeatedEvaluate(benchmark::State& state) {
+  const auto& benchmark_case =
+      GetDefaultPathCase(static_cast<int>(state.range(0)));
+  Expression expression;
+  ParseExpressionDefault(
+      BenchmarkCase{benchmark_case.name, benchmark_case.formula, {}}, expression);
+  for (auto _ : state) {
+    for (int i = 0; i < 64; ++i) {
+      auto value = expression.Calculate();
+      benchmark::DoNotOptimize(value);
+    }
+    benchmark::ClobberMemory();
+  }
+  state.SetItemsProcessed(state.iterations() * 64);
+  state.SetLabel(benchmark_case.name);
+}
+
+void BM_GenericDefaultCaseRepeatedEvaluate(benchmark::State& state) {
+  const auto& benchmark_case =
+      GetDefaultPathCase(static_cast<int>(state.range(0)));
+  Expression expression;
+  ParseExpression(
+      BenchmarkCase{benchmark_case.name, benchmark_case.formula, {}}, expression);
   for (auto _ : state) {
     for (int i = 0; i < 64; ++i) {
       auto value = expression.Calculate();
@@ -295,6 +352,8 @@ BENCHMARK(BM_Parse)->DenseRange(0, 5);
 BENCHMARK(BM_ParseReserved)->DenseRange(0, 5);
 BENCHMARK(BM_Evaluate)->DenseRange(0, 5);
 BENCHMARK(BM_RepeatedEvaluate)->DenseRange(0, 5);
+BENCHMARK(BM_DefaultRepeatedEvaluate)->DenseRange(0, 4);
+BENCHMARK(BM_GenericDefaultCaseRepeatedEvaluate)->DenseRange(0, 4);
 BENCHMARK(BM_Format)->DenseRange(0, 5);
 BENCHMARK(BM_BooleanChainEvaluate)->DenseRange(0, 1);
 BENCHMARK(BM_FoldedVariadicParse)->DenseRange(0, 1);
