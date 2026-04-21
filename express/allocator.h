@@ -40,6 +40,22 @@ class EXPRESS_EXPORT Allocator {
     return ptr;
   }
 
+  void reserve_bytes(size_t capacity,
+                     size_t alignment = alignof(std::max_align_t)) {
+    const size_t normalized_alignment =
+        std::max(alignment, alignof(std::max_align_t));
+
+    if (!chunks_.empty()) {
+      auto& chunk = chunks_.back();
+      if (chunk.alignment_ >= normalized_alignment &&
+          chunk.capacity_ - chunk.size_ >= capacity) {
+        return;
+      }
+    }
+
+    allocate_chunk(capacity, normalized_alignment);
+  }
+
   void swap(Allocator& other) noexcept { std::swap(chunks_, other.chunks_); }
 
   void clear() noexcept { chunks_.clear(); }

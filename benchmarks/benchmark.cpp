@@ -95,11 +95,33 @@ void ParseExpression(const BenchmarkCase& benchmark_case, Expression& expression
   expression.Parse(parser, allocator);
 }
 
+void ParseExpressionReserved(const BenchmarkCase& benchmark_case,
+                             Expression& expression) {
+  LexerDelegate lexer_delegate;
+  Lexer lexer{benchmark_case.formula, lexer_delegate, 0};
+  Allocator allocator;
+  allocator.reserve_bytes(std::max<size_t>(
+      64, std::char_traits<char>::length(benchmark_case.formula) * 8));
+  BenchmarkParserDelegate parser_delegate{allocator, benchmark_case.variables};
+  BasicParser<Lexer, BenchmarkParserDelegate> parser{lexer, parser_delegate};
+  expression.Parse(parser, allocator);
+}
+
 void BM_Parse(benchmark::State& state) {
   const auto& benchmark_case = GetCase(static_cast<int>(state.range(0)));
   for (auto _ : state) {
     Expression expression;
     ParseExpression(benchmark_case, expression);
+    benchmark::DoNotOptimize(expression.Calculate());
+  }
+  state.SetLabel(benchmark_case.name);
+}
+
+void BM_ParseReserved(benchmark::State& state) {
+  const auto& benchmark_case = GetCase(static_cast<int>(state.range(0)));
+  for (auto _ : state) {
+    Expression expression;
+    ParseExpressionReserved(benchmark_case, expression);
     benchmark::DoNotOptimize(expression.Calculate());
   }
   state.SetLabel(benchmark_case.name);
@@ -174,12 +196,26 @@ void BM_ParseAndEvaluate(benchmark::State& state) {
   state.SetLabel(benchmark_case.name);
 }
 
+void BM_ParseAndEvaluateReserved(benchmark::State& state) {
+  const auto& benchmark_case = GetCase(static_cast<int>(state.range(0)));
+  for (auto _ : state) {
+    Expression expression;
+    ParseExpressionReserved(benchmark_case, expression);
+    auto value = expression.Calculate();
+    benchmark::DoNotOptimize(value);
+    benchmark::ClobberMemory();
+  }
+  state.SetLabel(benchmark_case.name);
+}
+
 BENCHMARK(BM_Parse)->DenseRange(0, 4);
+BENCHMARK(BM_ParseReserved)->DenseRange(0, 4);
 BENCHMARK(BM_Evaluate)->DenseRange(0, 4);
 BENCHMARK(BM_RepeatedEvaluate)->DenseRange(0, 4);
 BENCHMARK(BM_Format)->DenseRange(0, 4);
 BENCHMARK(BM_Traverse)->DenseRange(0, 4);
 BENCHMARK(BM_ParseAndEvaluate)->DenseRange(0, 4);
+BENCHMARK(BM_ParseAndEvaluateReserved)->DenseRange(0, 4);
 
 }  // namespace
 }  // namespace expression

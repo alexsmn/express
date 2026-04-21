@@ -4,33 +4,33 @@
 
 Commit: `Optimize formatting hot path and expand benchmark baseline`
 
-- [ ] In [express/formatter_delegate.h](/mnt/d/tc/third_party/express/express/formatter_delegate.h), replace `std::to_string` in `AppendDouble` with a `std::to_chars`-based implementation.
-- [ ] Preserve current public API and keep a fallback only if floating-point `to_chars` is unavailable.
-- [ ] In [benchmarks/benchmark.cpp](/mnt/d/tc/third_party/express/benchmarks/benchmark.cpp), add repeated-evaluation benchmarks for pre-parsed expressions.
-- [ ] Keep the current benchmark workload matrix and add only the new repeated-eval dimension.
-- [ ] Re-run benchmarks and refresh the benchmark section in [README.md](/mnt/d/tc/third_party/express/README.md).
-- [ ] Verify unit tests still pass unchanged.
+- [x] In [express/formatter_delegate.h](/mnt/d/tc/third_party/express/express/formatter_delegate.h), replace `std::to_string` in `AppendDouble` with a `std::to_chars`-based implementation.
+- [x] Preserve current public API and keep a fallback only if floating-point `to_chars` is unavailable.
+- [x] In [benchmarks/benchmark.cpp](/mnt/d/tc/third_party/express/benchmarks/benchmark.cpp), add repeated-evaluation benchmarks for pre-parsed expressions.
+- [x] Keep the current benchmark workload matrix and add only the new repeated-eval dimension.
+- [x] Re-run benchmarks and refresh the benchmark section in [README.md](/mnt/d/tc/third_party/express/README.md).
+- [x] Verify unit tests still pass unchanged.
 
 Exit criteria:
 
-- [ ] `Format` benchmarks improve or at minimum do not regress.
-- [ ] README reflects the new benchmark shape.
+- [x] `Format` benchmarks improve or at minimum do not regress.
+- [x] README reflects the new benchmark shape.
 
 ## Phase 2: Allocator Reserve Hook
 
 Commit: `Add allocator reserve support for parse-heavy workloads`
 
-- [ ] In [express/allocator.h](/mnt/d/tc/third_party/express/express/allocator.h), add a `reserve_bytes(size_t, size_t alignment = alignof(std::max_align_t))` API.
-- [ ] Keep `allocate()` semantics unchanged for existing callers.
-- [ ] In [express/basic_expression.h](/mnt/d/tc/third_party/express/express/basic_expression.h), add a parse path that pre-reserves allocator space using a formula-length heuristic.
-- [ ] Keep `Parse(const char*)` source-compatible and make reserve automatic only for the default parse path.
-- [ ] In [benchmarks/benchmark.cpp](/mnt/d/tc/third_party/express/benchmarks/benchmark.cpp), add parse and parse+evaluate measurements for the reserved path.
-- [ ] In [tests/test.cpp](/mnt/d/tc/third_party/express/tests/test.cpp), add behavioral tests proving reserve does not change parse/evaluate results.
+- [x] In [express/allocator.h](/mnt/d/tc/third_party/express/express/allocator.h), add a `reserve_bytes(size_t, size_t alignment = alignof(std::max_align_t))` API.
+- [x] Keep `allocate()` semantics unchanged for existing callers.
+- [x] In [express/basic_expression.h](/mnt/d/tc/third_party/express/express/basic_expression.h), add a parse path that pre-reserves allocator space using a formula-length heuristic.
+- [x] Keep `Parse(const char*)` source-compatible and make reserve automatic only for the default parse path.
+- [x] In [benchmarks/benchmark.cpp](/mnt/d/tc/third_party/express/benchmarks/benchmark.cpp), add parse and parse+evaluate measurements for the reserved path.
+- [x] In [tests/test.cpp](/mnt/d/tc/third_party/express/tests/test.cpp), add behavioral tests proving reserve does not change parse/evaluate results.
 
 Exit criteria:
 
-- [ ] Parse-heavy benchmarks improve for medium/large inputs.
-- [ ] No public API break beyond additive allocator functionality.
+- [x] Parse-heavy benchmarks improve for medium/large inputs.
+- [x] No public API break beyond additive allocator functionality.
 
 ## Phase 3: Short-Circuit Boolean Execution
 

@@ -55,6 +55,11 @@ class BasicExpression {
 
 namespace {
 
+inline size_t EstimateReserveBytes(const char* buf) {
+  const auto len = std::char_traits<char>::length(buf);
+  return std::max<size_t>(64, len * 8);
+}
+
 template <class Visitor>
 struct TraverseAdapter {
   bool Callback(const Token* token) { return visitor_(token); }
@@ -73,6 +78,7 @@ void BasicExpression<BasicToken>::Parse(const char* buf) {
   LexerDelegate lexer_delegate;
   Lexer lexer{buf, lexer_delegate, 0};
   Allocator allocator;
+  allocator.reserve_bytes(EstimateReserveBytes(buf));
   BasicParserDelegate<BasicToken> parser_delegate{allocator};
   BasicParser<Lexer, decltype(parser_delegate)> parser{lexer, parser_delegate};
   Parse(parser, allocator);
