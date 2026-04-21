@@ -276,16 +276,6 @@ void ValidateUtf8(Value expected_result,
   EXPECT_EQ(expected_result, ex.Calculate());
 }
 
-void ParseGenericExpression(const char* formula, Expression& ex) {
-  LexerDelegate lexer_delegate;
-  Lexer lexer{formula, lexer_delegate, 0};
-  Allocator allocator;
-  BasicParserDelegate<PolymorphicToken> parser_delegate{allocator};
-  BasicParser<Lexer, BasicParserDelegate<PolymorphicToken>> parser{
-      lexer, parser_delegate};
-  ex.Parse(parser, allocator);
-}
-
 TEST(Express, Test) {
   Validate(2, "5 - 3");
   Validate(3, "6 - 2 - 1");
@@ -461,38 +451,6 @@ TEST(Express, AndShortCircuitsLeftToRight) {
 TEST(Express, FoldedVariadicFunctionsChangeTraversalShape) {
   EXPECT_EQ(5, GetTokenCount("Min(5, 6, 4)"));
   EXPECT_EQ(7, GetTokenCount("Or(0, 0, 1, 0)"));
-}
-
-TEST(Express, DefaultAndGenericPathsProduceSameResults) {
-  const char* formulas[] = {
-      "1 + 2 * 3",
-      "\"Hello\" + \" \" + \"World\"",
-      "If(2 - 1 - 1, 4 + 2, 3 * 3)",
-      "Min(5, 4, 6, 8, 3, 10)",
-      "Or(0, 0, 1, 0)",
-      "(10 - (5 + 3)) * 3",
-  };
-
-  TestFormatterDelegate formatter_delegate;
-  for (const char* formula : formulas) {
-    Expression default_expression;
-    default_expression.Parse(formula);
-
-    Expression generic_expression;
-    ParseGenericExpression(formula, generic_expression);
-
-    EXPECT_EQ(default_expression.Format(formatter_delegate),
-              generic_expression.Format(formatter_delegate));
-    EXPECT_EQ(default_expression.Calculate(), generic_expression.Calculate());
-
-    int default_token_count = 0;
-    default_expression.Traverse(&TokenCountCallback, &default_token_count);
-
-    int generic_token_count = 0;
-    generic_expression.Traverse(&TokenCountCallback, &generic_token_count);
-
-    EXPECT_EQ(generic_token_count, default_token_count);
-  }
 }
 
 TEST(Expression, CustomExpression) {

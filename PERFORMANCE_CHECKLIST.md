@@ -91,32 +91,32 @@ Exit criteria:
 
 Commit: `Add non-virtual fast path for default Expression`
 
-- [x] In [express/express.h](/mnt/d/tc/third_party/express/express/express.h) and [express/express.cpp](/mnt/d/tc/third_party/express/express/express.cpp), introduce an internal default-engine representation optimized for the standard parser path.
-- [x] Keep the public `Expression` API unchanged.
-- [x] In [express/token.h](/mnt/d/tc/third_party/express/express/token.h), keep `Token` and `PolymorphicToken` as the customization surface; do not remove them.
-- [x] In [express/standard_tokens.h](/mnt/d/tc/third_party/express/express/standard_tokens.h), implement a compact internal representation for default expressions, starting with literals, arithmetic, comparison, parentheses, and current standard functions.
-- [x] Route only `Expression::Parse(const char*)` through the fast path.
-- [x] Keep custom parser/delegate usage on the generic token path.
-- [x] In [tests/test.cpp](/mnt/d/tc/third_party/express/tests/test.cpp), ensure the existing full behavior suite still passes unchanged.
-- [x] Add comparison tests between default-path and generic-path evaluation/format results.
-- [x] In [benchmarks/benchmark.cpp](/mnt/d/tc/third_party/express/benchmarks/benchmark.cpp), report default-path vs generic-path performance.
+- [ ] In [express/express.h](/mnt/d/tc/third_party/express/express/express.h) and [express/express.cpp](/mnt/d/tc/third_party/express/express/express.cpp), introduce an internal default-engine representation optimized for the standard parser path.
+- [ ] Keep the public `Expression` API unchanged.
+- [ ] In [express/token.h](/mnt/d/tc/third_party/express/express/token.h), keep `Token` and `PolymorphicToken` as the customization surface; do not remove them.
+- [ ] In [express/standard_tokens.h](/mnt/d/tc/third_party/express/express/standard_tokens.h), implement a compact internal representation for default expressions, starting with literals, arithmetic, comparison, parentheses, and current standard functions.
+- [ ] Route only `Expression::Parse(const char*)` through the fast path.
+- [ ] Keep custom parser/delegate usage on the generic token path.
+- [ ] In [tests/test.cpp](/mnt/d/tc/third_party/express/tests/test.cpp), ensure the existing full behavior suite still passes unchanged.
+- [ ] Add comparison tests between default-path and generic-path evaluation/format results.
+- [ ] In [benchmarks/benchmark.cpp](/mnt/d/tc/third_party/express/benchmarks/benchmark.cpp), report default-path vs generic-path performance.
 
 Exit criteria:
 
 - [ ] Default-engine repeated evaluation is materially faster.
-- [x] Customization behavior remains intact and separate.
+- [ ] Customization behavior remains intact and separate.
 
 ## Recommended Gate Between Phases
 
 - [x] Do not start Phase 4 until Phase 3 benchmarks confirm short-circuit improvements.
 - [x] Do not start Phase 6 until Phase 5 benchmark gains are measured; otherwise it will be hard to attribute wins.
-- [x] Refresh README benchmark numbers only after Phases 1, 3, 5, and 6, not after every phase.
+- [ ] Refresh README benchmark numbers only after Phases 1, 3, 5, and 6, not after every phase.
 
 ## Suggested Final Validation Pass
 
 Commit: `Refresh benchmark report after performance improvements`
 
-- [x] Run the full benchmark suite in the intended build mode.
-- [x] Update the benchmark section in [README.md](/mnt/d/tc/third_party/express/README.md).
-- [x] Verify all unit tests pass.
-- [x] Confirm no machine-specific paths or environment-specific wording leaked into documentation.
+- [ ] Run the full benchmark suite in the intended build mode.
+- [ ] Update the benchmark section in [README.md](/mnt/d/tc/third_party/express/README.md).
+- [ ] Verify all unit tests pass.
+- [ ] Confirm no machine-specific paths or environment-specific wording leaked into documentation.
