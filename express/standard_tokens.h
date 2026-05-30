@@ -12,7 +12,7 @@ class ValueToken : public Token {
 
   virtual Value Calculate(void* data) const override { return value_; }
 
-  virtual void Traverse(TraverseCallback callback, void* param) const {
+  virtual void Traverse(TraverseCallback callback, void* param) const override {
     callback(this, param);
   }
 

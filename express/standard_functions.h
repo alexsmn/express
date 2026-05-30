@@ -168,7 +168,7 @@ class BasicVariadicFunction : public BasicFunction<BasicToken> {
       return val;
     }
 
-    virtual void Traverse(TraverseCallback callback, void* param) const {
+    virtual void Traverse(TraverseCallback callback, void* param) const override {
       callback(this, param);
       for (size_t i = 0; i < count_; ++i)
         params_[i].Traverse(callback, param);
@@ -379,7 +379,7 @@ class BasicMathFunction1 : public BasicFunction<BasicToken> {
       return fun_.fun_(v);
     }
 
-    virtual void Traverse(TraverseCallback callback, void* param) const {
+    virtual void Traverse(TraverseCallback callback, void* param) const override {
       callback(this, param);
       argument_.Traverse(callback, param);
     }
@@ -431,7 +431,7 @@ class BasicMathFunction2 : public BasicFunction<BasicToken> {
       return fun_.fun_(v1, v2);
     }
 
-    virtual void Traverse(TraverseCallback callback, void* param) const {
+    virtual void Traverse(TraverseCallback callback, void* param) const override {
       callback(this, param);
       left_.Traverse(callback, param);
       right_.Traverse(callback, param);
