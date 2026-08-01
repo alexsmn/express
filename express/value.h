@@ -1,9 +1,11 @@
 #pragma once
 
+#include <algorithm>
 #include <limits>
 #include <math.h>
 #include <stdexcept>
 #include <string.h>
+#include <string>
 #include <string_view>
 
 namespace expression {
