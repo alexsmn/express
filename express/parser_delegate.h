@@ -1,0 +1,92 @@
+#pragma once
+
+#include "express/arena_token.h"
+#include "express/function.h"
+#include "express/standard_functions.h"
+#include "express/standard_tokens.h"
+
+#include <string_view>
+
+namespace expression {
+
+class Allocator;
+
+template <class BasicToken>
+class BasicParserDelegate {
+ public:
+  // BasicToken must be safe to store in allocator-backed raw memory.
+  static_assert(kIsArenaToken<BasicToken>,
+                "BasicToken must satisfy the arena token contract.");
+  explicit BasicParserDelegate(Allocator& allocator) : allocator_{allocator} {}
+  virtual ~BasicParserDelegate() = default;
+
+  BasicToken MakeDoubleToken(double value) {
+    return BasicToken{CreateToken<ValueToken<double>>(allocator_, value)};
+  }
+
+  BasicToken MakeStringToken(std::string_view str) {
+    return BasicToken{
+        CreateToken<StringValueToken>(allocator_, str, allocator_)};
+  }
+
+  template <class OperandToken>
+  BasicToken MakeUnaryOperatorToken(char oper, OperandToken&& operand_token) {
+    return BasicToken{CreateToken<BasicUnaryOperatorToken<OperandToken>>(
+        allocator_, oper, std::forward<OperandToken>(operand_token))};
+  }
+
+  template <class NestedToken>
+  BasicToken MakeParenthesesToken(NestedToken&& nested_token) {
+    return BasicToken{CreateToken<ParenthesesToken<NestedToken>>(
+        allocator_, std::forward<NestedToken>(nested_token))};
+  }
+
+  template <class LeftOperand, class RightOperand>
+  BasicToken MakeBinaryOperatorToken(char oper,
+                                     LeftOperand&& left_operand,
+                                     RightOperand&& right_operand) {
+    return BasicToken{CreateToken<BasicBinaryOperatorToken<BasicToken>>(
+        allocator_, oper, std::forward<LeftOperand>(left_operand),
+        std::forward<RightOperand>(right_operand))};
+  }
+
+  BasicToken MakeFunctionToken(std::string_view name,
+                               std::vector<BasicToken> arguments) {
+    // function
+    const auto* function = FindBasicFunction(name);
+    if (!function) {
+      throw std::runtime_error{std::string{"function was not found: "} +
+                               std::string{name}};
+    }
+
+    if (function->params != -1 &&
+        static_cast<size_t>(function->params) != arguments.size()) {
+      throw std::runtime_error{std::string{"parameters expected: "} +
+                               std::to_string(function->params)};
+    }
+
+    if (function->params == -1 && arguments.empty()) {
+      throw std::runtime_error{"no parameters provided"};
+    }
+
+    if (function->SupportsFoldedArguments())
+      return function->MakeFoldedToken(allocator_, std::move(arguments));
+
+    return function->MakeToken(allocator_, arguments.data(), arguments.size());
+  }
+
+  template <class Lexem, class Parser>
+  BasicToken MakeCustomToken(const Lexem& lexem, Parser& parser) {
+    throw std::runtime_error{"unexpected token"};
+  }
+
+  virtual const BasicFunction<BasicToken>* FindBasicFunction(
+      std::string_view name) {
+    return functions::FindDefaultFunction<BasicToken>(name);
+  }
+
+ protected:
+  Allocator& allocator_;
+};
+
+}  // namespace expression
