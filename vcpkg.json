@@ -6,12 +6,16 @@
   "$comment": [
     "This product has no required dependencies, by its own policy: express's",
     "CLAUDE.md says the library is intentionally standalone and GTest must",
-    "stay optional. Both CMake guards agree -- tests/ builds express_unittest",
-    "only `if(GTEST_FOUND)`, and benchmarks/ finds benchmark CONFIG QUIET and",
-    "skips the target when it is absent. So both are features, not entries in",
-    "`dependencies`. In a composed build the consumer's own gtest satisfies",
-    "the test target anyway, which is why express_unittest is in the ninja",
-    "graph today without express asking for anything."
+    "stay optional. tests/ builds express_unittest only when the GTest::gtest_main",
+    "target exists, and benchmarks/ finds benchmark CONFIG QUIET and skips the",
+    "target when it is absent. So both are features, not entries in",
+    "`dependencies`.",
+    "This comment used to add that express_unittest was in the ninja graph",
+    "anyway, satisfied by a consumer's gtest. It was not: the gate read",
+    "GTEST_FOUND, which vcpkg's CONFIG-mode GTest does not set, so the tests",
+    "built nowhere. Corrected 2026-08-08 (ADR 0011 phase 2), along with the",
+    "gate. express's own `ninja` preset now enables the `tests` feature, so a",
+    "standalone build of this repo does run them."
   ],
   "$consumes": [],
   "$direct": [],

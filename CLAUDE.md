@@ -52,10 +52,18 @@ CMake ≥ 3.16 is required. The library has no required runtime dependencies;
 GTest is optional and only used to build unit tests.
 
 ```sh
-cmake -S . -B build
-cmake --build build
-ctest --test-dir build           # runs express_unittest if GTest was found
+cmake --preset ninja
+cmake --build --preset release      # or: debug, relwithdebinfo
+ctest --preset test-release         # or: test-debug
 ```
+
+Every product in the SCADA tree carries this same preset set (ADR 0011). Set
+`VCPKG_ROOT` in the environment; anything else machine-specific goes in
+`.scada-local.cmake` beside `build-support/`.
+
+GTest stays optional, as below — but express's own `ninja` preset enables the
+`tests` vcpkg feature, so a build of this repo does build and run
+`express_unittest`.
 
 CI (`.github/workflows/cmake.yml`) builds with Ninja on Windows MSVC, Windows
 MinGW, and Ubuntu GCC. It downloads pinned CMake 3.16.2 and Ninja 1.9.0,
@@ -159,7 +167,7 @@ case-insensitively via `EqualsNoCase`. `params == -1` marks variadic.
 
 1. Edit sources; keep public headers stable where possible (template-heavy
    code means ABI is not meaningful, but source compatibility matters).
-2. `cmake --build build && ctest --test-dir build --output-on-failure`.
+2. `cmake --build --preset release && ctest --preset test-release`.
 3. Run `clang-format -i` on touched files.
 4. Commit with a short, imperative message (match existing `git log` style).
 5. Push to the branch requested by the user; do not open PRs unless asked.
