@@ -88,8 +88,8 @@ Downstream projects can consume this repo via `FindExpress.cmake`
 3. `BasicParserDelegate` turns lexems into AST nodes. It allocates every node
    in the `Allocator` via `CreateToken<T>(allocator, ...)` (placement-new into
    the arena). Override `MakeCustomToken` / `FindBasicFunction` to introduce
-   variables or custom functions — see `tests/test.cpp` for the canonical
-   pattern (`TestParserDelegate`, `TestVariableToken`).
+   variables or custom functions — see `express/expression_test.cpp` for the
+   canonical pattern (`TestParserDelegate`, `TestVariableToken`).
 4. `BasicExpression<BasicToken>` owns the arena and the root token. It exposes
    `Parse`, `Calculate(void* data = nullptr)`, `Traverse`, `Format`, `Clear`.
 
@@ -157,7 +157,8 @@ case-insensitively via `EqualsNoCase`. `params == -1` marks variadic.
   between dllexport/dllimport). Annotate new public classes accordingly.
 - **No DLL/header split**: most of the library is header-only templates. Only
   `lexer.cpp` and `express.cpp` carry out-of-line code.
-- **Tests**: add GTest cases in `tests/test.cpp`. The `Validate(expected,
+- **Tests**: add GTest cases in the `express/*_test.cpp` files that
+  `tests/CMakeLists.txt` globs. The `Validate(expected,
   formula, vars)` helper round-trips parse → `Format` → `Calculate` and is
   the preferred way to cover new syntax/builtins. For custom-token or custom-
   delegate scenarios, mirror the `TestParserDelegate` / `CustomExpression`
