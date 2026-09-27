@@ -23,7 +23,7 @@ Public API lives under the `expression::` namespace in `express/`.
 ├── CMakeLists.txt          # Top-level CMake build for the `express` static lib
 ├── FindExpress.cmake       # Helper so downstream projects can add_subdirectory
 ├── .clang-format           # Chromium-based C++ style (use this formatter)
-├── .github/workflows/      # CI: CMake matrix build for MSVC, MinGW, GCC
+├── .github/workflows/      # CI: preset build + tests on MSVC, GCC, AppleClang
 ├── express/                # Library sources (public headers + a couple of .cpp)
 │   ├── express.h/.cpp      # Entry point: `expression::Expression`
 │   ├── basic_expression.h  # Template `BasicExpression<BasicToken>` — generic
@@ -65,10 +65,13 @@ GTest stays optional, as below — but express's own `ninja` preset enables the
 `tests` vcpkg feature, so a build of this repo does build and run
 `express_unittest`.
 
-CI (`.github/workflows/cmake.yml`) builds with Ninja on Windows MSVC, Windows
-MinGW, and Ubuntu GCC. It downloads pinned CMake 3.16.2 and Ninja 1.9.0,
-configures in `build/`, builds, and then runs `ctest -j`. Keep any changes
-portable across those three toolchains.
+CI (`.github/workflows/ci.yml`) runs exactly those presets — `ninja`,
+`release`, `test-release` — on Windows MSVC, Ubuntu GCC and macOS AppleClang,
+with vcpkg pinned to the commit the monorepo uses. Keep any changes portable
+across those three toolchains. It replaced `cmake.yml` on 2026-09-26, which
+downloaded CMake 3.16.2 and had failed at configure since the build kit
+started setting C++23 (3.16 rejects `CXX_STANDARD 23`); that workflow's MinGW
+leg was not carried over.
 
 Downstream projects can consume this repo via `FindExpress.cmake`
 (`add_subdirectory` guard) and then link against the `express` target.
@@ -184,4 +187,4 @@ case-insensitively via `EqualsNoCase`. `params == -1` marks variadic.
   travel as the `Lexem::lexem` character code and are pattern-matched by the
   parser and by any custom `ParserDelegate`.
 - Don't skip the CI matrix in your head: constructs that compile on GCC may
-  break MSVC `/permissive-` or MinGW. When in doubt, keep it plain C++17.
+  break MSVC `/permissive-`. When in doubt, keep it plain C++17.
