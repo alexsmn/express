@@ -14,6 +14,7 @@ class Token;
 template <class BasicToken>
 class BasicFunction {
  public:
+  virtual ~BasicFunction() = default;
   BasicFunction(std::string_view name, int params)
       : name(name), params(params) {}
 

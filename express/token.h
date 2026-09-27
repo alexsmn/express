@@ -15,6 +15,10 @@ using TraverseCallback = bool (*)(const Token* token, void* param);
 
 class EXPRESS_EXPORT Token {
  public:
+  // Tokens live in an Allocator arena that frees raw chunks and never runs
+  // this destructor; it is virtual so that no derived token can be deleted
+  // through a Token pointer with the wrong one.
+  virtual ~Token() = default;
   virtual Value Calculate(void* data) const = 0;
 
   virtual void Traverse(TraverseCallback callback, void* param) const = 0;
