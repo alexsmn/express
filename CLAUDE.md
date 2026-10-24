@@ -48,7 +48,7 @@ Public API lives under the `expression::` namespace in `express/`.
 
 ## Build & test
 
-CMake ≥ 3.16 is required. The library has no required runtime dependencies;
+CMake ≥ 3.27 is required. The library has no required runtime dependencies;
 GTest is optional and only used to build unit tests.
 
 ```sh
